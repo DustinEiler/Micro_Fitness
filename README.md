@@ -8,6 +8,7 @@ It's a progressive web app (PWA): it runs in the browser, installs to your home 
 
 - **Train:** start a saved routine or an empty workout. Your weekly goal is shown as plates loaded on a barbell.
 - **Tiny steps:** every routine exercise has a target (for example 4 × 13 @ 135 lb, 60s rest). Each workout suggests one small step (+1 rep, +5 lb / 2.5 kg, or −5s rest), rotating between them; tap a different step if you prefer. Hit it and it becomes your new baseline. Miss it and you repeat it next time; miss twice and it tries a different kind of step.
+- **Training phases:** endurance (15–20 reps, 30–60s rest), hypertrophy (6–12 reps, 3–6 sets, 60–90s rest), maximum strength (1–5 reps, 2–3 min rest) and power (1–10 reps, 2–3 min rest). Each phase runs 13 weeks, then the app prompts you to switch. All targets stay inside the phase's ranges. Once you hit the top of the rep range on every set, the next step is always more weight, with reps lowered just enough to keep it a tiny step. Switching phase converts your targets using your estimated one-rep max.
 - **Log sets:** weight and reps for each set, pre-filled from last time, with your previous numbers shown under each exercise.
 - **Rest timer:** starts automatically when you tick off a set, with a beep and vibration when it's done.
 - **History:** every finished workout, grouped by month.

@@ -10,6 +10,7 @@ import { esc } from './dom.js';
 import { unit, toDisp, setScore, setStr, fmtDur, fmtNum, plural } from './format.js';
 import { exById, lastSetsFor, bestScore, workoutVolume, workoutSets } from './queries.js';
 import { suggest, applyResult, describe } from './progression.js';
+import { phaseId } from './phases.js';
 import { openSheet, confirmSheet, toast } from './ui.js';
 import { render, go } from './router.js';
 
@@ -113,7 +114,7 @@ export function finishWorkout() {
       outcomes.push({ ...out, name: exById(e.exerciseId).name });
     }
 
-    const w = { id: a.id, name: a.name.trim() || 'Workout', routineId: a.routineId, startedAt: a.startedAt, endedAt: Date.now(), entries };
+    const w = { id: a.id, name: a.name.trim() || 'Workout', routineId: a.routineId, phase: phaseId(), startedAt: a.startedAt, endedAt: Date.now(), entries };
     S.workouts.push(w);
     S.workouts.sort((p, q) => p.startedAt - q.startedAt);
     S.active = null;

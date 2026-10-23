@@ -3,6 +3,9 @@
 //   reps:   +1 rep on every set
 //   weight: +one weight step (default 2.5 kg / 5 lb)
 //   rest:   −5 seconds between sets
+// All targets stay inside the current phase's ranges (js/phases.js).
+// Cap rule: once reps reach the top of the phase range on every set, the only
+// step is more weight, with reps lowered just enough to keep it a tiny step.
 //
 // Routine item (in S.routines[].items):
 //   { exerciseId, sets, reps, w (kg or null for bodyweight), rest (seconds),
@@ -11,31 +14,48 @@
 // lever: last lever that succeeded. pendingLever/missed: the lever being
 // retried after a miss, and how many misses in a row.
 
-import { S } from './state.js';
-import { toDisp, unit } from './format.js';
+import { toDisp, unit, e1rm } from './format.js';
+import { currentPhase, fitItem, stepFor, clamp } from './phases.js';
 
 export const LEVER_ORDER = ['reps', 'weight', 'rest'];
-export const MIN_REST = 30;
 export const REST_STEP = 5;
-export const MAX_REPS = 30;
-const KG_PER_LB = 0.45359237;
 
-export const defaultStep = () => (S.units === 'lb' ? 5 * KG_PER_LB : 2.5);
-export const stepFor = (item) => item.step || defaultStep();
+// New exercise in a routine: bottom of the rep range and longest rest,
+// so there's room to climb.
+export function newItem(exerciseId) {
+  const p = currentPhase();
+  return { exerciseId, sets: p.sets ? p.sets[0] : 3, reps: p.reps[0], w: null, rest: p.rest[1], ready: false, missed: 0 };
+}
 
-export const newItem = (exerciseId, rest = 60) => ({ exerciseId, sets: 3, reps: 10, w: null, rest, ready: false, missed: 0 });
+// Smallest rep count at the heavier weight that still beats the old
+// estimated one-rep max, kept inside the phase range.
+function repsAfterWeightBump(w, reps, w2, range) {
+  const old = e1rm(w, reps);
+  const r = Math.floor(30 * (old / w2 - 1)) + 1;
+  return clamp(r, range);
+}
 
-// The tiny steps available from an item's baseline.
+// The tiny steps available from an item's baseline, plus whether the
+// rep cap forces a weight increase.
 export function stepOptions(item) {
+  const p = currentPhase();
+  const [, repMax] = p.reps;
   const base = { sets: item.sets, reps: item.reps, w: item.w, rest: item.rest };
-  const opts = [];
-  if (item.reps < MAX_REPS) opts.push({ lever: 'reps', label: '+1 rep', target: { ...base, reps: base.reps + 1 } });
-  if (item.w) {
-    const step = stepFor(item);
-    opts.push({ lever: 'weight', label: `+${toDisp(step)} ${unit()}`, target: { ...base, w: base.w + step } });
+  const step = stepFor(item);
+  const stepLabel = `+${toDisp(step)} ${unit()}`;
+
+  if (item.reps >= repMax) {
+    if (!item.w) return { opts: [], capped: true };
+    const w2 = item.w + step;
+    const reps = repsAfterWeightBump(item.w, item.reps, w2, p.reps);
+    const label = reps < item.reps ? `${stepLabel}, ${reps} reps` : stepLabel;
+    return { opts: [{ lever: 'weight', label, target: { ...base, w: w2, reps } }], capped: true };
   }
-  if (item.rest - REST_STEP >= MIN_REST) opts.push({ lever: 'rest', label: `−${REST_STEP}s rest`, target: { ...base, rest: base.rest - REST_STEP } });
-  return opts;
+
+  const opts = [{ lever: 'reps', label: '+1 rep', target: { ...base, reps: base.reps + 1 } }];
+  if (item.w) opts.push({ lever: 'weight', label: stepLabel, target: { ...base, w: base.w + step } });
+  if (item.rest - REST_STEP >= p.rest[0]) opts.push({ lever: 'rest', label: `−${REST_STEP}s rest`, target: { ...base, rest: base.rest - REST_STEP } });
+  return { opts, capped: false };
 }
 
 const nextLever = (after, available) => {
@@ -49,11 +69,15 @@ const nextLever = (after, available) => {
 
 // Which step to pre-select, and why.
 export function suggest(item) {
-  const opts = stepOptions(item);
-  if (!opts.length) return { opts, lever: null, note: 'This one’s maxed out. Edit the routine to set a new target.' };
+  const p = currentPhase();
+  const { opts, capped } = stepOptions(item);
+  if (!opts.length)
+    return { opts, lever: null, note: `You’ve reached ${p.reps[1]} reps, the top of the ${p.name.toLowerCase()} range. Add weight (a vest or belt) in the routine editor, or swap to a harder variation.` };
   const available = opts.map((o) => o.lever);
-  if (item.missed === 1 && available.includes(item.pendingLever))
-    return { opts, lever: item.pendingLever, note: 'Not quite last time, so same target again.' };
+  const retry = item.missed >= 1 ? 'Not quite last time, so same target again.' : '';
+  if (capped)
+    return { opts, lever: 'weight', note: retry || `You hit ${item.reps} reps on every set, the top of the ${p.name.toLowerCase()} range, so the weight goes up.` };
+  if (item.missed === 1 && available.includes(item.pendingLever)) return { opts, lever: item.pendingLever, note: retry };
   if (item.missed >= 2)
     return { opts, lever: nextLever(item.pendingLever, available), note: 'Two misses in a row, so trying a different kind of step.' };
   return { opts, lever: nextLever(item.lever, available), note: '' };
@@ -84,6 +108,7 @@ export function applyResult(item, plan, sets) {
       pendingLever: null,
       missed: 0,
     });
+    fitItem(item); // keep the starting point inside the phase ranges
     return { kind: 'calibrated', target: { sets: item.sets, reps: item.reps, w: item.w, rest: item.rest } };
   }
 

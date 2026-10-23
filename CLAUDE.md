@@ -20,7 +20,8 @@ Read only the files a task needs.
 |---|---|
 | Button does something | `js/app.js` (`actions` map, keyed by `data-action`) |
 | A screen's layout/content | `js/views/<train,session,history,progress,routines>.js` |
-| Tiny-step rules: options, rotation, hit/miss, baselines | `js/progression.js` |
+| Tiny-step rules: options, rotation, rep cap, hit/miss | `js/progression.js` |
+| Training phases: ranges, 13-week clock, fitting targets | `js/phases.js` |
 | Start/finish workout, PBs, summary | `js/workout.js` |
 | Pop-ups: picker, routine editor, settings, backup | `js/sheets.js` |
 | Rest timer | `js/timer.js` |
@@ -35,8 +36,17 @@ Read only the files a task needs.
 - `ready: false`: the next session calibrates (logged sets become the baseline).
 - Suggested lever rotates reps → weight → rest after the last success. Miss once: retry the same step. Miss twice: rotate to a different lever.
 - Hit = at least `sets` checked-off sets with reps ≥ target and weight ≥ target. On hit, the target becomes the baseline and `S.stepsTaken` goes up.
-- Limits: rest ≥ 30s (`MIN_REST`), reps ≤ 30 (`MAX_REPS`). Weight step defaults to 2.5 kg / 5 lb.
+- Every target stays inside the current phase's ranges (`PHASES` in `js/phases.js`): reps, sets (hypertrophy only), rest. The rest step is only offered if it stays above the phase minimum.
+- **Rep cap rule:** when reps are at the top of the phase range, the only step is weight, with reps lowered to the smallest count whose estimated 1RM (Epley) still beats the old one (e.g. 12 @ 135 → 11 @ 140 lb).
+- Weight step defaults to 2.5 kg / 5 lb (per-exercise override: `item.step`).
 - Workout entries from a routine carry `plan` (see top of `js/workout.js`); exercises added mid-workout don't.
+
+## Phases (js/phases.js)
+
+- `S.phase = { id, startedAt, history }`. Phases: endurance 15–20 reps, 30–60s; hypertrophy 6–12 reps, 3–6 sets, 60–90s; strength 1–5 reps, 120–180s; power 1–10 reps, 120–180s. Each runs 13 weeks; then the Train screen prompts for the next (cycle order: endurance → hypertrophy → strength → power).
+- Owner set rep ranges and strength rest; hypertrophy and power rest ranges were defaults chosen by Claude. Check with the owner before changing phase rules.
+- Changing phase calls `fitItem` on every routine item: clamps into the new ranges and, if reps change, recalculates weight from estimated 1RM (rounded down to the weight step).
+- New/imported/upgraded data sets `phaseFitPending`; `ensureFitted()` runs it once.
 
 ## Patterns
 

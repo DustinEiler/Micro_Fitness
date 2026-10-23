@@ -596,3 +596,48 @@ body.has-timer .toast { bottom: calc(var(--tabs-h) + var(--timer-h) + var(--safe
 .item-fields { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; padding: 4px 0 0 20px; }
 .item-fields .field { margin-bottom: 10px; }
 .rc-note { margin-top: 8px; }
+
+/* ---------- Training phases ---------- */
+
+.phase-card {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0 8px;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  touch-action: manipulation;
+}
+.pc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.pc-name { font: 600 22px/1.1 var(--font-num); }
+.pc-week { font: 600 18px/1 var(--font-num); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pc-bar { display: block; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.pc-bar span { display: block; height: 100%; background: var(--primary); border-radius: 3px; }
+.pc-range { font-size: 15px; color: var(--muted); }
+.phase-card.is-done { border-color: var(--plate-yellow); box-shadow: inset 0 0 0 1px var(--plate-yellow); }
+.phase-card.is-done .pc-bar span { background: var(--plate-yellow); }
+.pc-cta { font-weight: 600; color: var(--primary); }
+
+.phase-hint { font-size: 15px; font-weight: 500; margin: 6px 0 4px; }
+
+.phase-list { display: grid; gap: 10px; }
+.phase-option {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--field);
+}
+.phase-option.is-current { border-color: var(--primary); }
+.po-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.po-name { font: 600 22px/1.1 var(--font-num); }
+.po-tag { font-size: 13px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--done); color: var(--ink); white-space: nowrap; }
+.phase-option.is-current .po-tag { background: var(--primary); color: var(--primary-ink); }
+.po-range { font-weight: 600; font-size: 15px; }
+.po-focus { font-size: 15px; color: var(--muted); }

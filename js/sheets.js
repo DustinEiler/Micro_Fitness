@@ -5,7 +5,8 @@ import { S, setState, persist } from './state.js';
 import { uid, parseBackup } from './store.js';
 import { $, esc, ICON } from './dom.js';
 import { fmtClock, unit, toDisp, fromDisp } from './format.js';
-import { newItem, stepFor, describe, MAX_REPS, MIN_REST } from './progression.js';
+import { newItem, describe } from './progression.js';
+import { PHASES, PHASE_ORDER, PHASE_WEEKS, currentPhase, phaseId, phaseWeek, phaseComplete, nextPhaseId, rangeText, stepFor, clamp, ensureFitted } from './phases.js';
 import { exById } from './queries.js';
 import { GROUPS } from './data.js';
 import { openSheet, closeSheet, confirmSheet, sheetState, toast } from './ui.js';
@@ -90,7 +91,7 @@ export function editRoutine(id) {
 }
 
 export function addDraftItem(exerciseId) {
-  editor.draft.items.push(newItem(exerciseId, S.rest));
+  editor.draft.items.push(newItem(exerciseId));
   editor.draft.open = editor.draft.items.length - 1;
 }
 
@@ -117,6 +118,7 @@ export function openEditor() {
       <input id="draft-name" value="${esc(r.name)}" placeholder="For example, Upper body" autocomplete="off"></label>
     <h3 class="sub-h">Exercises</h3>
     <p class="fine">Tap an exercise to set its target. Each workout moves it one tiny step further.</p>
+    <p class="phase-hint">${currentPhase().name} phase: ${rangeText(currentPhase())}.</p>
     ${
       r.items.length
         ? `<ol class="draft-list">${r.items
@@ -175,10 +177,15 @@ export function saveRoutine() {
   }
   const { isNew, open, ...r } = draft;
   r.name = r.name.trim();
+  // Keep targets inside the current phase's ranges.
+  const p = currentPhase();
+  let adjusted = false;
   r.items = r.items.map(({ edited, ...it }) => {
-    it.sets = Math.min(10, Math.max(1, it.sets));
-    it.reps = Math.min(MAX_REPS, Math.max(1, it.reps));
-    it.rest = Math.min(600, Math.max(MIN_REST, it.rest));
+    const before = `${it.sets}/${it.reps}/${it.rest}`;
+    it.sets = p.sets ? clamp(it.sets, p.sets) : Math.min(10, Math.max(1, it.sets));
+    it.reps = clamp(it.reps, p.reps);
+    it.rest = clamp(it.rest, p.rest);
+    if (before !== `${it.sets}/${it.reps}/${it.rest}`) adjusted = true;
     // A target you set by hand is your new baseline: start the step cycle fresh.
     if (edited) Object.assign(it, { ready: it.ready || it.w != null, missed: 0, pendingLever: null });
     return it;
@@ -188,7 +195,11 @@ export function saveRoutine() {
   persist();
   closeSheet({ cancelled: false });
   render();
-  toast(isNew ? 'Routine created.' : 'Routine saved.');
+  toast(
+    adjusted
+      ? `${isNew ? 'Routine created' : 'Routine saved'}. Some targets were adjusted to fit the ${p.name.toLowerCase()} range: ${rangeText(p)}.`
+      : isNew ? 'Routine created.' : 'Routine saved.'
+  );
 }
 
 export function deleteRoutine() {
@@ -198,6 +209,29 @@ export function deleteRoutine() {
     persist();
     render();
   }, true);
+}
+
+/* ---------- Training phases ---------- */
+
+export function openPhases() {
+  const cur = phaseId();
+  const next = nextPhaseId();
+  const done = phaseComplete();
+  openSheet(`<h2 class="sheet-h">Training phase</h2>
+    <p class="lede">${
+      done
+        ? `Your ${PHASES[cur].name.toLowerCase()} phase has run its ${PHASE_WEEKS} weeks. Pick the next one to keep progressing.`
+        : `You’re in week ${phaseWeek()} of ${PHASE_WEEKS} of ${PHASES[cur].name.toLowerCase()}. Each phase runs ${PHASE_WEEKS} weeks before changing.`
+    }</p>
+    <ul class="phase-list">${PHASE_ORDER.map((id) => {
+      const p = PHASES[id];
+      const tag = id === cur ? 'Current' : id === next ? 'Next in the cycle' : '';
+      return `<li><button class="phase-option${id === cur ? ' is-current' : ''}" data-action="${id === cur ? 'close-sheet' : 'phase-pick'}" data-id="${id}">
+        <span class="po-top"><span class="po-name">${p.name}</span>${tag ? `<span class="po-tag">${tag}</span>` : ''}</span>
+        <span class="po-range">${rangeText(p)}</span>
+        <span class="po-focus">${p.focus}</span>
+      </button></li>`;
+    }).join('')}</ul>`, { tall: true });
 }
 
 /* ---------- Settings ---------- */
@@ -242,6 +276,7 @@ export async function importBackup(file) {
     const n = next.workouts.length;
     confirmSheet(`This replaces everything on this device with the backup, which has ${n} workout${n === 1 ? '' : 's'}.`, 'Import backup', () => {
       setState(next);
+      ensureFitted();
       persist();
       closeSheet({ cancelled: false });
       render();

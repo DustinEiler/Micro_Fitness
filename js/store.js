@@ -4,7 +4,7 @@
 import { DEFAULT_EXERCISES, DEFAULT_ROUTINES } from './data.js';
 
 export const STORAGE_KEY = 'micro-fitness.v1';
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const uid = () =>
   Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-5);
@@ -19,6 +19,8 @@ export function freshState() {
     routines: DEFAULT_ROUTINES.map((r) => ({ ...r, items: r.items.map((i) => ({ ...i, w: null, ready: false, missed: 0 })) })),
     workouts: [],
     stepsTaken: 0,
+    phase: { id: 'hypertrophy', startedAt: Date.now(), history: [] },
+    phaseFitPending: true, // app.js fits routine targets to the phase on boot
     active: null,
     timer: null,
     progressEx: null,
@@ -35,6 +37,12 @@ function migrate(data) {
     }));
     data.active = null; // an in-progress v1 workout has no plan data
     data.version = 2;
+  }
+  if (data.version < 3) {
+    // v3 adds training phases. Start in hypertrophy; targets get fitted on boot.
+    data.phase = { id: 'hypertrophy', startedAt: Date.now(), history: [] };
+    data.phaseFitPending = true;
+    data.version = 3;
   }
   return data;
 }

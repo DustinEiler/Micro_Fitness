@@ -4,6 +4,24 @@ import { S } from '../state.js';
 import { esc } from '../dom.js';
 import { ago } from '../format.js';
 import { weekCounts } from '../queries.js';
+import { currentPhase, phaseWeek, phaseComplete, rangeText, PHASE_WEEKS } from '../phases.js';
+
+// Current training phase and how far through its 13 weeks you are.
+function phaseCard() {
+  const p = currentPhase();
+  const week = phaseWeek();
+  if (phaseComplete())
+    return `<button class="phase-card is-done" data-action="phase">
+      <span class="pc-top"><span class="pc-name">${p.name} phase complete</span><span class="pc-week">${PHASE_WEEKS} of ${PHASE_WEEKS} weeks</span></span>
+      <span class="pc-bar"><span style="width:100%"></span></span>
+      <span class="pc-cta">Choose your next phase</span>
+    </button>`;
+  return `<button class="phase-card" data-action="phase" aria-label="${p.name} phase, week ${week} of ${PHASE_WEEKS}. Change phase">
+    <span class="pc-top"><span class="pc-name">${p.name} phase</span><span class="pc-week">Week ${week} of ${PHASE_WEEKS}</span></span>
+    <span class="pc-bar"><span style="width:${(week / PHASE_WEEKS) * 100}%"></span></span>
+    <span class="pc-range">${rangeText(p)}</span>
+  </button>`;
+}
 
 const PLATE_COLORS = ['var(--plate-red)', 'var(--plate-blue)', 'var(--plate-yellow)', 'var(--plate-green)', 'var(--plate-white)'];
 
@@ -47,6 +65,7 @@ export function viewTrain() {
     })
     .join('');
   return `
+    ${phaseCard()}
     <section class="week">
       ${barbell(done, S.weeklyGoal)}
       <p class="week-line">${line}</p>

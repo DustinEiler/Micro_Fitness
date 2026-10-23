@@ -6,6 +6,7 @@ import { S, setState, persist, persistSoon } from './state.js';
 import { freshState } from './store.js';
 import { $, $$last } from './dom.js';
 import { fromDisp } from './format.js';
+import { ensureFitted, startPhase, PHASES } from './phases.js';
 import { closeSheet, confirmSheet, sheetState, toast } from './ui.js';
 import { render, go } from './router.js';
 import { startTimer, adjustTimer, skipTimer, updateTimer, primeAudio } from './timer.js';
@@ -13,7 +14,7 @@ import { newEntry, startWorkout, finishWorkout, discardWorkout, chooseStep, rest
 import {
   openPicker, renderPickList, pick, createAndPick, exMenu,
   editor, newRoutine, editRoutine, openEditor, saveRoutine, deleteRoutine, addDraftItem, updateDraftItem,
-  openSettings, exportBackup, importBackup,
+  openSettings, exportBackup, importBackup, openPhases,
 } from './sheets.js';
 
 const actions = {
@@ -132,11 +133,28 @@ const actions = {
   'routine-save': () => saveRoutine(),
   'routine-delete': () => deleteRoutine(),
 
+  // Training phases
+  phase: () => openPhases(),
+  'phase-pick': (b, { id }) => {
+    if (S.active) {
+      toast('Finish or discard your current workout before changing phase.');
+      return;
+    }
+    const p = PHASES[id];
+    confirmSheet(`Start the ${p.name.toLowerCase()} phase? Your routine targets move into its ranges, with weights adjusted to match your current strength. The 13-week clock starts today.`, `Start ${p.name.toLowerCase()}`, () => {
+      startPhase(id);
+      persist();
+      render();
+      toast(`${p.name} phase started. Week 1 of 13.`);
+    });
+  },
+
   // Settings
   export: () => exportBackup(),
   erase: () =>
     confirmSheet('Erase all workouts, routines and settings on this device? Export a backup first if you might want them back.', 'Erase everything', () => {
       setState(freshState());
+      ensureFitted();
       persist();
       render();
       toast('All data erased.');
@@ -236,6 +254,10 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ---------- Boot ---------- */
+
+// New or upgraded data: move routine targets inside the phase ranges once.
+ensureFitted();
+persist();
 
 render();
 
