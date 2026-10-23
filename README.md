@@ -1,17 +1,18 @@
 # Micro Fitness
 
-A simple workout logbook for your phone. Log sets as you lift, follow saved routines with a rest timer, and track your progress over time.
+A workout app built on the idea behind *Atomic Habits*: get a tiny bit stronger every workout. Each exercise in a routine has a target, and every session nudges it forward by one small step: one more rep, a little more weight, or a few seconds less rest.
 
 It's a progressive web app (PWA): it runs in the browser, installs to your home screen like a regular app, and works offline. It can be wrapped as an App Store / Google Play app later with [Capacitor](https://capacitorjs.com/) without rewriting it.
 
 ## What it does
 
 - **Train:** start a saved routine or an empty workout. Your weekly goal is shown as plates loaded on a barbell.
+- **Tiny steps:** every routine exercise has a target (for example 4 × 13 @ 135 lb, 60s rest). Each workout suggests one small step (+1 rep, +5 lb / 2.5 kg, or −5s rest), rotating between them; tap a different step if you prefer. Hit it and it becomes your new baseline. Miss it and you repeat it next time; miss twice and it tries a different kind of step.
 - **Log sets:** weight and reps for each set, pre-filled from last time, with your previous numbers shown under each exercise.
 - **Rest timer:** starts automatically when you tick off a set, with a beep and vibration when it's done.
 - **History:** every finished workout, grouped by month.
 - **Progress:** a 12-week consistency view, weekly-goal streak, and a chart per exercise (estimated one-rep max, or max reps for bodyweight moves).
-- **Routines:** create, edit, reorder and delete your own routines. Push, Pull and Legs are included to start.
+- **Routines:** create and edit routines with a target for each exercise. Push, Pull and Legs are included to start; your first session with a routine sets the starting weights.
 - **Settings:** kg or lb, weekly goal, default rest time, and backup export/import.
 
 ## Your data

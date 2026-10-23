@@ -42,7 +42,7 @@ export function viewTrain() {
       const last = [...S.workouts].reverse().find((w) => w.routineId === r.id);
       return `<li><button class="routine-start" data-action="start" data-id="${r.id}">
         <span class="rs-name">${esc(r.name)}</span>
-        <span class="rs-meta">${r.exerciseIds.length} exercises${last ? `, last done ${ago(last.startedAt)}` : ''}</span>
+        <span class="rs-meta">${r.items.length} exercises${last ? `, last done ${ago(last.startedAt)}` : ''}</span>
       </button></li>`;
     })
     .join('');
@@ -50,6 +50,7 @@ export function viewTrain() {
     <section class="week">
       ${barbell(done, S.weeklyGoal)}
       <p class="week-line">${line}</p>
+      ${S.stepsTaken ? `<p class="fine">${S.stepsTaken} tiny step${S.stepsTaken === 1 ? '' : 's'} taken so far. Each one makes the next workout a little stronger.</p>` : `<p class="fine">Each workout moves every exercise one tiny step forward.</p>`}
     </section>
     <h2 class="section-h">Start a routine</h2>
     ${S.routines.length ? `<ul class="routine-list">${rows}</ul>` : `<p class="empty">You don’t have any routines yet. <a href="#routines">Create a routine</a> or start an empty workout.</p>`}

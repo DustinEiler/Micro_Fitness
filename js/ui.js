@@ -20,17 +20,23 @@ export function toast(msg) {
 export const sheetState = { onPick: null, onCancel: null, confirm: null };
 
 let lastFocus = null;
+let closedAt = 0;
 
 export function openSheet(html, { tall = false } = {}) {
   const root = $('#sheet-root');
-  if (!root.classList.contains('open')) lastFocus = document.activeElement;
+  const opening = !root.classList.contains('open');
+  const handoff = Date.now() - closedAt < 100; // one sheet replacing another
+  if (opening && !handoff) lastFocus = document.activeElement;
+  // Re-rendering an open sheet keeps its scroll position and skips the slide-in.
+  const scroll = opening ? 0 : $('.sheet', root)?.scrollTop || 0;
   root.innerHTML = `<div class="sheet-backdrop" data-action="close-sheet"></div>
-    <div class="sheet${tall ? ' sheet-tall' : ''}" role="dialog" aria-modal="true">${html}</div>`;
+    <div class="sheet${tall ? ' sheet-tall' : ''}${opening && !handoff ? ' sheet-enter' : ''}" role="dialog" aria-modal="true">${html}</div>`;
   root.classList.add('open');
   document.body.classList.add('sheet-open');
   const sheet = $('.sheet', root);
   sheet.setAttribute('aria-label', $('.sheet-h', sheet)?.textContent || 'Dialog');
   sheet.tabIndex = -1;
+  sheet.scrollTop = scroll;
   sheet.focus({ preventScroll: true });
 }
 
@@ -41,6 +47,7 @@ export function closeSheet({ cancelled = true } = {}) {
   if (!root.classList.contains('open')) return;
   root.classList.remove('open');
   root.innerHTML = '';
+  closedAt = Date.now();
   document.body.classList.remove('sheet-open');
   const cb = cancelled && sheetState.onCancel;
   sheetState.onPick = sheetState.onCancel = sheetState.confirm = null;

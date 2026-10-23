@@ -4,7 +4,8 @@
 import { S, setState, persist } from './state.js';
 import { uid, parseBackup } from './store.js';
 import { $, esc, ICON } from './dom.js';
-import { fmtClock } from './format.js';
+import { fmtClock, unit, toDisp, fromDisp } from './format.js';
+import { newItem, stepFor, describe, MAX_REPS, MIN_REST } from './progression.js';
 import { exById } from './queries.js';
 import { GROUPS } from './data.js';
 import { openSheet, closeSheet, confirmSheet, sheetState, toast } from './ui.js';
@@ -71,19 +72,42 @@ export function exMenu(i) {
 /* ---------- Routine editor ---------- */
 
 // The routine being edited. Changes stay here until Save.
+// draft = { id, name, items: [routine item], open: index of expanded item, isNew }
 export const editor = { draft: null };
 
 const REST_OPTIONS = [30, 45, 60, 90, 120, 150, 180, 240, 300];
+const STEP_OPTIONS = { kg: [1, 1.25, 2, 2.5, 5], lb: [1, 2.5, 5, 10] };
 
 export function newRoutine() {
-  editor.draft = { id: uid(), name: '', rest: S.rest, exerciseIds: [], isNew: true };
+  editor.draft = { id: uid(), name: '', items: [], open: null, isNew: true };
   openEditor();
 }
 
 export function editRoutine(id) {
   const r = S.routines.find((x) => x.id === id);
-  editor.draft = { ...r, exerciseIds: [...r.exerciseIds], isNew: false };
+  editor.draft = { ...r, items: r.items.map((i) => ({ ...i })), open: null, isNew: false };
   openEditor();
+}
+
+export function addDraftItem(exerciseId) {
+  editor.draft.items.push(newItem(exerciseId, S.rest));
+  editor.draft.open = editor.draft.items.length - 1;
+}
+
+const itemSummary = (it) => (it.ready || it.w != null ? describe(it) : `${it.sets} × ${it.reps}, ${it.rest}s rest, weight set in first session`);
+
+function itemFields(it, k) {
+  const steps = STEP_OPTIONS[unit()];
+  const cur = toDisp(stepFor(it));
+  const stepSel = steps.includes(cur) ? cur : steps.reduce((a, b) => (Math.abs(b - cur) < Math.abs(a - cur) ? b : a));
+  const f = (label, html) => `<label class="field"><span class="field-label">${label}</span>${html}</label>`;
+  return `<div class="item-fields">
+    ${f('Sets', `<select data-item="${k}.sets">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `<option${n === it.sets ? ' selected' : ''}>${n}</option>`).join('')}</select>`)}
+    ${f('Reps per set', `<input data-item="${k}.reps" inputmode="numeric" value="${it.reps}" autocomplete="off">`)}
+    ${f(`Weight (${unit()})`, `<input data-item="${k}.w" inputmode="decimal" value="${it.w == null ? '' : toDisp(it.w)}" placeholder="${it.ready ? 'Bodyweight' : 'Set in first session'}" autocomplete="off">`)}
+    ${f('Rest (seconds)', `<input data-item="${k}.rest" inputmode="numeric" value="${it.rest}" autocomplete="off">`)}
+    ${f('Weight step', `<select data-item="${k}.step">${steps.map((v) => `<option value="${v}"${v === stepSel ? ' selected' : ''}>${v} ${unit()}</option>`).join('')}</select>`)}
+  </div>`;
 }
 
 export function openEditor() {
@@ -91,18 +115,28 @@ export function openEditor() {
   openSheet(`<h2 class="sheet-h">${r.isNew ? 'New routine' : 'Edit routine'}</h2>
     <label class="field"><span class="field-label">Name</span>
       <input id="draft-name" value="${esc(r.name)}" placeholder="For example, Upper body" autocomplete="off"></label>
-    <label class="field"><span class="field-label">Rest between sets</span>
-      <select id="draft-rest">${REST_OPTIONS.map((s) => `<option value="${s}"${s === r.rest ? ' selected' : ''}>${fmtClock(s)}</option>`).join('')}</select></label>
     <h3 class="sub-h">Exercises</h3>
+    <p class="fine">Tap an exercise to set its target. Each workout moves it one tiny step further.</p>
     ${
-      r.exerciseIds.length
-        ? `<ol class="draft-list">${r.exerciseIds
-            .map(
-              (id, k) => `<li><span class="dot" data-g="${exById(id).group}"></span><span class="dl-name">${esc(exById(id).name)}</span>
-              <button class="icon-btn" data-action="draft-move" data-i="${k}" data-id="-1" aria-label="Move ${esc(exById(id).name)} up"${k === 0 ? ' disabled' : ''}>${ICON.up}</button>
-              <button class="icon-btn" data-action="draft-move" data-i="${k}" data-id="1" aria-label="Move ${esc(exById(id).name)} down"${k === r.exerciseIds.length - 1 ? ' disabled' : ''}>${ICON.down}</button>
-              <button class="icon-btn" data-action="draft-remove" data-i="${k}" aria-label="Remove ${esc(exById(id).name)}">${ICON.x}</button></li>`
-            )
+      r.items.length
+        ? `<ol class="draft-list">${r.items
+            .map((it, k) => {
+              const name = esc(exById(it.exerciseId).name);
+              const open = r.open === k;
+              return `<li class="draft-item${open ? ' is-open' : ''}">
+                <div class="draft-row">
+                  <span class="dot" data-g="${exById(it.exerciseId).group}"></span>
+                  <button class="dl-name" data-action="draft-toggle" data-i="${k}" aria-expanded="${open}">
+                    <span>${name}</span>
+                    <span class="dl-sum" id="dl-sum-${k}">${itemSummary(it)}</span>
+                  </button>
+                  <button class="icon-btn" data-action="draft-move" data-i="${k}" data-id="-1" aria-label="Move ${name} up"${k === 0 ? ' disabled' : ''}>${ICON.up}</button>
+                  <button class="icon-btn" data-action="draft-move" data-i="${k}" data-id="1" aria-label="Move ${name} down"${k === r.items.length - 1 ? ' disabled' : ''}>${ICON.down}</button>
+                  <button class="icon-btn" data-action="draft-remove" data-i="${k}" aria-label="Remove ${name}">${ICON.x}</button>
+                </div>
+                ${open ? itemFields(it, k) : ''}
+              </li>`;
+            })
             .join('')}</ol>`
         : `<p class="empty">No exercises yet.</p>`
     }
@@ -113,6 +147,21 @@ export function openEditor() {
     </div>`, { tall: true });
 }
 
+// Typing in an exercise's target fields.
+export function updateDraftItem(k, field, value) {
+  const it = editor.draft?.items[k];
+  if (!it) return;
+  if (field === 'w') it.w = fromDisp(value);
+  else if (field === 'step') it.step = fromDisp(value);
+  else {
+    const n = parseInt(value, 10);
+    it[field] = Number.isFinite(n) ? n : it[field];
+  }
+  it.edited = true;
+  const sum = $(`#dl-sum-${k}`);
+  if (sum) sum.textContent = itemSummary(it);
+}
+
 export function saveRoutine() {
   const draft = editor.draft;
   if (!draft.name.trim()) {
@@ -120,12 +169,20 @@ export function saveRoutine() {
     $('#draft-name')?.focus();
     return;
   }
-  if (!draft.exerciseIds.length) {
+  if (!draft.items.length) {
     toast('Add at least one exercise.');
     return;
   }
-  const { isNew, ...r } = draft;
+  const { isNew, open, ...r } = draft;
   r.name = r.name.trim();
+  r.items = r.items.map(({ edited, ...it }) => {
+    it.sets = Math.min(10, Math.max(1, it.sets));
+    it.reps = Math.min(MAX_REPS, Math.max(1, it.reps));
+    it.rest = Math.min(600, Math.max(MIN_REST, it.rest));
+    // A target you set by hand is your new baseline: start the step cycle fresh.
+    if (edited) Object.assign(it, { ready: it.ready || it.w != null, missed: 0, pendingLever: null });
+    return it;
+  });
   if (isNew) S.routines.push(r);
   else S.routines = S.routines.map((x) => (x.id === r.id ? r : x));
   persist();

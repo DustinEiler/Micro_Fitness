@@ -54,23 +54,24 @@ export const DEFAULT_EXERCISES = [
   { id: 'ab-wheel', name: 'Ab wheel rollout', group: 'core' },
 ];
 
+// Starter routines. Weights are left blank: the first session with a routine
+// records your starting point, and progression builds from there.
+const item = (exerciseId, sets, reps, rest) => ({ exerciseId, sets, reps, rest });
+
 export const DEFAULT_ROUTINES = [
   {
     id: 'push',
     name: 'Push',
-    rest: 90,
-    exerciseIds: ['bench', 'ohp', 'incline-db', 'lateral-raise', 'pushdown'],
+    items: [item('bench', 4, 8, 90), item('ohp', 3, 8, 90), item('incline-db', 3, 10, 75), item('lateral-raise', 3, 12, 60), item('pushdown', 3, 12, 60)],
   },
   {
     id: 'pull',
     name: 'Pull',
-    rest: 90,
-    exerciseIds: ['deadlift', 'row', 'pull-up', 'face-pull', 'curl'],
+    items: [item('deadlift', 3, 5, 120), item('row', 4, 8, 90), item('pull-up', 3, 6, 90), item('face-pull', 3, 15, 60), item('curl', 3, 10, 60)],
   },
   {
     id: 'legs',
     name: 'Legs',
-    rest: 120,
-    exerciseIds: ['squat', 'rdl', 'leg-press', 'leg-curl', 'calf-raise'],
+    items: [item('squat', 4, 6, 120), item('rdl', 3, 8, 90), item('leg-press', 3, 10, 90), item('leg-curl', 3, 12, 60), item('calf-raise', 4, 12, 60)],
   },
 ];

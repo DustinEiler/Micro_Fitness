@@ -9,10 +9,10 @@ import { fromDisp } from './format.js';
 import { closeSheet, confirmSheet, sheetState, toast } from './ui.js';
 import { render, go } from './router.js';
 import { startTimer, adjustTimer, skipTimer, updateTimer, primeAudio } from './timer.js';
-import { newEntry, startWorkout, finishWorkout, discardWorkout } from './workout.js';
+import { newEntry, startWorkout, finishWorkout, discardWorkout, chooseStep, restFor } from './workout.js';
 import {
   openPicker, renderPickList, pick, createAndPick, exMenu,
-  editor, newRoutine, editRoutine, openEditor, saveRoutine, deleteRoutine,
+  editor, newRoutine, editRoutine, openEditor, saveRoutine, deleteRoutine, addDraftItem, updateDraftItem,
   openSettings, exportBackup, importBackup,
 } from './sheets.js';
 
@@ -65,9 +65,10 @@ const actions = {
     persist();
     if (s.done) {
       primeAudio();
-      startTimer(S.active.rest || S.rest);
+      startTimer(restFor(S.active.entries[i]));
     }
   },
+  'choose-step': (b, { i, id }) => chooseStep(i, id),
   'ex-menu': (b, { i }) => exMenu(i),
   'ex-move': (b, { i, id }) => {
     const e = S.active.entries;
@@ -103,21 +104,27 @@ const actions = {
   // Routine editor
   'new-routine': () => newRoutine(),
   'edit-routine': (b, { id }) => editRoutine(id),
+  'draft-toggle': (b, { i }) => {
+    editor.draft.open = editor.draft.open === i ? null : i;
+    openEditor();
+  },
   'draft-move': (b, { i, id }) => {
-    const list = editor.draft.exerciseIds;
+    const list = editor.draft.items;
     const k = i + Number(id);
     if (k < 0 || k >= list.length) return;
     [list[i], list[k]] = [list[k], list[i]];
+    editor.draft.open = null;
     openEditor();
   },
   'draft-remove': (b, { i }) => {
-    editor.draft.exerciseIds.splice(i, 1);
+    editor.draft.items.splice(i, 1);
+    editor.draft.open = null;
     openEditor();
   },
   'draft-add': () =>
     openPicker(
       (id) => {
-        editor.draft.exerciseIds.push(id);
+        addDraftItem(id);
         openEditor();
       },
       () => openEditor()
@@ -167,6 +174,9 @@ document.addEventListener('input', (e) => {
     renderPickList(t.value);
   } else if (t.id === 'draft-name' && editor.draft) {
     editor.draft.name = t.value;
+  } else if (t.dataset.item) {
+    const [k, field] = t.dataset.item.split('.');
+    updateDraftItem(+k, field, t.value);
   }
 });
 
@@ -176,8 +186,9 @@ document.addEventListener('change', (e) => {
     S.progressEx = t.value;
     persist();
     render();
-  } else if (t.id === 'draft-rest' && editor.draft) {
-    editor.draft.rest = Number(t.value);
+  } else if (t.dataset.item) {
+    const [k, field] = t.dataset.item.split('.');
+    updateDraftItem(+k, field, t.value);
   } else if (t.name === 'units') {
     S.units = t.value;
     persist();

@@ -4,7 +4,7 @@
 import { DEFAULT_EXERCISES, DEFAULT_ROUTINES } from './data.js';
 
 export const STORAGE_KEY = 'micro-fitness.v1';
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const uid = () =>
   Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-5);
@@ -16,18 +16,33 @@ export function freshState() {
     weeklyGoal: 3,
     rest: 90,
     exercises: DEFAULT_EXERCISES.map((e) => ({ ...e })),
-    routines: DEFAULT_ROUTINES.map((r) => ({ ...r, exerciseIds: [...r.exerciseIds] })),
+    routines: DEFAULT_ROUTINES.map((r) => ({ ...r, items: r.items.map((i) => ({ ...i, w: null, ready: false, missed: 0 })) })),
     workouts: [],
+    stepsTaken: 0,
     active: null,
     timer: null,
     progressEx: null,
   };
 }
 
+// Bring older saved data up to the current shape.
+function migrate(data) {
+  if ((data.version || 1) < 2) {
+    // v1 routines had exerciseIds + one rest time; v2 has per-exercise targets.
+    data.routines = (data.routines || []).map(({ exerciseIds = [], rest = 90, ...r }) => ({
+      ...r,
+      items: exerciseIds.map((exerciseId) => ({ exerciseId, sets: 3, reps: 10, w: null, rest, ready: false, missed: 0 })),
+    }));
+    data.active = null; // an in-progress v1 workout has no plan data
+    data.version = 2;
+  }
+  return data;
+}
+
 export function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...freshState(), ...JSON.parse(raw) };
+    if (raw) return { ...freshState(), ...migrate(JSON.parse(raw)) };
   } catch (err) {
     console.warn('Could not read saved data', err);
   }
@@ -54,5 +69,5 @@ export function parseBackup(text) {
     Array.isArray(data.routines) &&
     Array.isArray(data.workouts);
   if (!ok) throw new Error('This file isn’t a Micro Fitness backup.');
-  return { ...freshState(), ...data, active: null, timer: null };
+  return { ...freshState(), ...migrate(data), active: null, timer: null };
 }

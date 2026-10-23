@@ -6,6 +6,27 @@ import { esc, ICON } from '../dom.js';
 import { unit, toDisp, setStr, fmtElapsed } from '../format.js';
 import { exById, lastSetsFor } from '../queries.js';
 import { GROUPS } from '../data.js';
+import { describe } from '../progression.js';
+
+// The tiny-step panel for exercises that came from a routine.
+function planBlock(e, i, name) {
+  const p = e.plan;
+  if (p.calibrate)
+    return `<div class="plan"><p class="plan-note">First time with this routine. Log what feels right and it becomes your starting point. Aim for ${p.target.sets} × ${p.target.reps}, ${p.target.rest}s rest.</p></div>`;
+  return `<div class="plan">
+    <p class="plan-base">Baseline: ${describe(p.base)}</p>
+    ${
+      p.options.length
+        ? `<p class="plan-h" id="steps-${i}">Today’s tiny step</p>
+          <div class="steps" role="radiogroup" aria-labelledby="steps-${i}">${p.options
+            .map((o) => `<button class="step" role="radio" aria-checked="${o.lever === p.lever}" data-action="choose-step" data-i="${i}" data-id="${o.lever}" aria-label="${esc(o.label)} for ${esc(name)}">${esc(o.label)}</button>`)
+            .join('')}</div>`
+        : ''
+    }
+    ${p.note ? `<p class="plan-note">${esc(p.note)}</p>` : ''}
+    <p class="plan-target">Target: <strong>${describe(p.target)}</strong></p>
+  </div>`;
+}
 
 export function viewSession() {
   const a = S.active;
@@ -30,7 +51,7 @@ export function viewSession() {
           <h2>${esc(ex.name)}</h2>
           <button class="icon-btn" data-action="ex-menu" data-i="${i}" aria-label="Options for ${esc(ex.name)}">${ICON.dots}</button>
         </header>
-        ${last ? `<p class="ex-last">Last time: ${last.map(setStr).join(', ')}</p>` : `<p class="ex-last">First time logging this one.</p>`}
+        ${e.plan ? planBlock(e, i, ex.name) : last ? `<p class="ex-last">Last time: ${last.map(setStr).join(', ')}</p>` : `<p class="ex-last">First time logging this one.</p>`}
         <div class="set-grid">
           <div class="set-row set-head" aria-hidden="true"><span>Set</span><span>${unit()}</span><span>Reps</span><span>Done</span></div>
           ${sets}

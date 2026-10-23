@@ -1,20 +1,66 @@
 // Starting, finishing and discarding workouts.
-// S.active = { id, name, routineId, rest, startedAt, entries: [{ exerciseId, sets: [{ w, r, done }] }] }
+// S.active = { id, name, routineId, startedAt, entries: [entry] }
+// entry = { exerciseId, sets: [{ w, r, done }], plan? }
+// plan (routine exercises only) = { routineId, index, calibrate, lever, label, note,
+//   base, options: [{ lever, label, target }], target: { sets, reps, w, rest } }
 
 import { S, persist } from './state.js';
 import { uid } from './store.js';
 import { esc } from './dom.js';
-import { unit, toDisp, setScore, setStr, fmtDur, fmtNum } from './format.js';
+import { unit, toDisp, setScore, setStr, fmtDur, fmtNum, plural } from './format.js';
 import { exById, lastSetsFor, bestScore, workoutVolume, workoutSets } from './queries.js';
+import { suggest, applyResult, describe } from './progression.js';
 import { openSheet, confirmSheet, toast } from './ui.js';
 import { render, go } from './router.js';
 
-// New exercise in a workout: pre-filled from last time, or three empty sets.
+const fillSets = (t) => Array.from({ length: t.sets }, () => ({ w: t.w ?? null, r: t.reps, done: false }));
+
+// Exercise added during a workout: pre-filled from last time, or three empty sets.
 export function newEntry(exId) {
   const last = lastSetsFor(exId);
   const sets = last ? last.map((s) => ({ w: s.w, r: s.r, done: false })) : [0, 1, 2].map(() => ({ w: null, r: null, done: false }));
   return { exerciseId: exId, sets };
 }
+
+// Exercise from a routine: today's target is one tiny step past the baseline.
+function plannedEntry(routine, index) {
+  const item = routine.items[index];
+  const base = { sets: item.sets, reps: item.reps, w: item.w, rest: item.rest };
+  if (!item.ready) {
+    const last = lastSetsFor(item.exerciseId);
+    const w = item.w ?? last?.[last.length - 1]?.w ?? null;
+    return {
+      exerciseId: item.exerciseId,
+      sets: fillSets({ ...base, w }),
+      plan: { routineId: routine.id, index, calibrate: true, base, target: base, options: [], lever: null },
+    };
+  }
+  const { opts, lever, note } = suggest(item);
+  const opt = opts.find((o) => o.lever === lever);
+  const target = opt ? opt.target : base;
+  return {
+    exerciseId: item.exerciseId,
+    sets: fillSets(target),
+    plan: { routineId: routine.id, index, calibrate: false, base, options: opts, lever, label: opt?.label, note, target },
+  };
+}
+
+// Switch today's tiny step. Sets already ticked off keep their numbers.
+export function chooseStep(i, lever) {
+  const e = S.active.entries[i];
+  const opt = e.plan?.options.find((o) => o.lever === lever);
+  if (!opt) return;
+  Object.assign(e.plan, { lever, label: opt.label, target: opt.target, note: '' });
+  for (const s of e.sets)
+    if (!s.done) {
+      s.w = opt.target.w ?? s.w;
+      s.r = opt.target.reps;
+    }
+  persist();
+  render();
+}
+
+export const restFor = (entry) => entry?.plan?.target.rest || S.rest;
 
 export function startWorkout(r) {
   if (S.active) {
@@ -26,9 +72,8 @@ export function startWorkout(r) {
     id: uid(),
     name: r ? r.name : 'Workout',
     routineId: r ? r.id : null,
-    rest: r ? r.rest : S.rest,
     startedAt: Date.now(),
-    entries: r ? r.exerciseIds.map(newEntry) : [],
+    entries: r ? r.items.map((_, k) => plannedEntry(r, k)) : [],
   };
   persist();
   go('train');
@@ -54,6 +99,20 @@ export function finishWorkout() {
         return prev > 0 && setScore(best) > prev ? { name: exById(e.exerciseId).name, set: best } : null;
       })
       .filter(Boolean);
+
+    // Move each routine exercise's baseline forward (or note the miss).
+    const outcomes = [];
+    for (const e of a.entries) {
+      if (!e.plan) continue;
+      const routine = S.routines.find((r) => r.id === e.plan.routineId);
+      const item = routine?.items[e.plan.index];
+      if (!item || item.exerciseId !== e.exerciseId) continue; // routine edited mid-workout
+      const out = applyResult(item, e.plan, e.sets);
+      if (!out) continue;
+      if (out.kind === 'hit') S.stepsTaken = (S.stepsTaken || 0) + 1;
+      outcomes.push({ ...out, name: exById(e.exerciseId).name });
+    }
+
     const w = { id: a.id, name: a.name.trim() || 'Workout', routineId: a.routineId, startedAt: a.startedAt, endedAt: Date.now(), entries };
     S.workouts.push(w);
     S.workouts.sort((p, q) => p.startedAt - q.startedAt);
@@ -61,7 +120,7 @@ export function finishWorkout() {
     S.timer = null;
     persist();
     render();
-    summarySheet(w, prs);
+    summarySheet(w, prs, outcomes);
   };
   if (unchecked) confirmSheet(`${unchecked} set${unchecked === 1 ? ' isn’t' : 's aren’t'} checked off and won’t be saved.`, 'Finish workout', save);
   else save();
@@ -74,15 +133,24 @@ export function discardWorkout() {
   render();
 }
 
-function summarySheet(w, prs) {
+function outcomeLine(o) {
+  if (o.kind === 'hit') return `<li><span class="out-badge out-hit">${esc(o.label)}</span><span><strong>${esc(o.name)}</strong> Step done. New baseline: ${describe(o.target)}.</span></li>`;
+  if (o.kind === 'missed') return `<li><span class="out-badge out-miss">Again</span><span><strong>${esc(o.name)}</strong> Not quite this time. You’ll repeat this target next workout.</span></li>`;
+  return `<li><span class="out-badge out-start">Start</span><span><strong>${esc(o.name)}</strong> Starting point set: ${describe(o.target)}.</span></li>`;
+}
+
+function summarySheet(w, prs, outcomes) {
   const vol = workoutVolume(w);
+  const hits = outcomes.filter((o) => o.kind === 'hit').length;
   openSheet(`
     <h2 class="sheet-h">Workout saved</h2>
+    ${hits ? `<p class="lede">${plural(hits, 'tiny step')} forward today. That’s ${plural(S.stepsTaken, 'step')} in total.</p>` : ''}
     <dl class="totals">
       <div><dt>Time</dt><dd>${fmtDur(w.endedAt - w.startedAt)}</dd></div>
       <div><dt>Sets</dt><dd>${workoutSets(w)}</dd></div>
       ${vol ? `<div><dt>Lifted (${unit()})</dt><dd>${fmtNum(toDisp(vol))}</dd></div>` : ''}
     </dl>
+    ${outcomes.length ? `<h3 class="sub-h">Next time</h3><ul class="outcomes">${outcomes.map(outcomeLine).join('')}</ul>` : ''}
     ${prs.length ? `<h3 class="sub-h">New personal bests</h3><ul class="pr-list">${prs.map((p) => `<li><span class="pr-badge">PB</span>${esc(p.name)}, ${setStr(p.set)}</li>`).join('')}</ul>` : ''}
-    <button class="btn btn-primary btn-wide" data-action="close-sheet">Done</button>`);
+    <button class="btn btn-primary btn-wide" data-action="close-sheet">Done</button>`, { tall: outcomes.length > 3 });
 }

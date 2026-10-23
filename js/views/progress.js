@@ -34,6 +34,7 @@ export function viewProgress() {
         <div><dt>Workouts</dt><dd>${S.workouts.length}</dd></div>
         <div><dt>This month</dt><dd>${thisMonth}</dd></div>
         <div><dt>Week streak</dt><dd>${st}</dd></div>
+        <div><dt>Tiny steps</dt><dd>${S.stepsTaken || 0}</dd></div>
       </dl>
     </section>
     <section class="panel">
