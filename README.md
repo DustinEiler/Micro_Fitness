@@ -46,13 +46,25 @@ Updates you push to `main` reach your phone the next time you open the app (some
 ```
 index.html            App shell and tab bar
 css/app.css           All styles, light and dark mode
-js/app.js             Screens, workout logic, rest timer, charts
-js/store.js           Saving and loading data, backup import
+js/app.js             Entry point: button actions and event wiring
+js/router.js          Tabs (#train, #history, …) and screen rendering
+js/views/             One file per screen: train, session, history, progress, routines
+js/workout.js         Start, finish and discard workouts
+js/sheets.js          Pop-up sheets: exercise picker, routine editor, settings, backups
+js/timer.js           Rest timer and workout clock
+js/state.js           Shared app state and saving
+js/store.js           Storage format, defaults, backup parsing
+js/format.js          Units (kg/lb), dates, number formatting
+js/queries.js         Lookups over workout history (last sets, bests, streaks)
+js/ui.js              Toasts and the sheet system
+js/dom.js             DOM helpers and icons
 js/data.js            Built-in exercise library and starter routines
 sw.js                 Offline caching (service worker)
 manifest.webmanifest  Install settings: name, icons, colours
 icons/                App icons
 ```
+
+See `CLAUDE.md` for conventions when changing the code.
 
 ## Turning it into a store app later
 
