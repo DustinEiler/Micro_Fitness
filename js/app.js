@@ -54,6 +54,7 @@ const fmtElapsed = (ms) => {
   const h = Math.floor(s / 3600);
   return h ? `${h}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}` : fmtClock(s);
 };
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const fmtNum = (n) => Math.round(n).toLocaleString();
 
 const startOfDay = (ts) => {
@@ -227,7 +228,7 @@ function viewSession() {
           const p = last?.[j];
           return `<div class="set-row${s.done ? ' is-done' : ''}">
             <span class="set-n">${j + 1}</span>
-            <input class="num" inputmode="decimal" enterkeyhint="next" autocomplete="off" aria-label="Set ${j + 1} weight in ${unit()}" data-set="${i}.${j}.w" value="${s.w == null ? '' : toDisp(s.w)}" placeholder="${p?.w ? toDisp(p.w) : 'BW'}">
+            <input class="num" inputmode="decimal" enterkeyhint="next" autocomplete="off" aria-label="Set ${j + 1} weight in ${unit()}" data-set="${i}.${j}.w" value="${s.w == null ? '' : toDisp(s.w)}" placeholder="${p ? (p.w ? toDisp(p.w) : 'BW') : '–'}">
             <input class="num" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="Set ${j + 1} reps" data-set="${i}.${j}.r" value="${s.r ?? ''}" placeholder="${p?.r ?? '–'}">
             <button class="check" data-action="toggle-set" data-i="${i}" data-j="${j}" aria-pressed="${s.done}" aria-label="Set ${j + 1} done">${ICON.check}</button>
           </div>`;
@@ -280,7 +281,7 @@ function viewHistory() {
     html += `<li><details class="hist">
       <summary>
         <span class="h-top"><span class="h-name">${esc(w.name)}</span><span class="h-date">${fmtDate(w.startedAt)}</span></span>
-        <span class="h-meta">${fmtDur(w.endedAt - w.startedAt)}, ${workoutSets(w)} sets${vol ? `, ${fmtNum(toDisp(vol))} ${unit()} lifted` : ''}</span>
+        <span class="h-meta">${fmtDur(w.endedAt - w.startedAt)}, ${plural(workoutSets(w), 'set')}${vol ? `, ${fmtNum(toDisp(vol))} ${unit()} lifted` : ''}</span>
       </summary>
       <div class="h-body">
         ${w.entries
