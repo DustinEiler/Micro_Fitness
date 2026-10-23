@@ -1,13 +1,12 @@
-// Content for the bottom sheets: exercise picker, per-exercise menu,
-// routine editor, settings, and backup export/import.
+// Content for the bottom sheets: exercise picker (mid-workout), per-exercise
+// menu, training phases, settings, and backup export/import.
+// The routine editor and exercise list are in js/editor.js.
 
 import { S, setState, persist } from './state.js';
 import { uid, parseBackup } from './store.js';
 import { $, esc, ICON } from './dom.js';
-import { fmtClock, unit, toDisp, fromDisp } from './format.js';
-import { newItem, describe } from './progression.js';
-import { PHASES, PHASE_ORDER, PHASE_WEEKS, currentPhase, phaseId, phaseWeek, phaseComplete, nextPhaseId, rangeText, stepFor, clamp, ensureFitted, restRange, restRangeText, fitAllRest, fmtRest } from './phases.js';
-import { exKind } from './data.js';
+import { fmtClock } from './format.js';
+import { PHASES, PHASE_ORDER, PHASE_WEEKS, phaseId, phaseWeek, phaseComplete, nextPhaseId, rangeText, ensureFitted } from './phases.js';
 import { exById } from './queries.js';
 import { GROUPS } from './data.js';
 import { openSheet, closeSheet, confirmSheet, sheetState, toast } from './ui.js';
@@ -27,7 +26,8 @@ export function openPicker(onPick, onCancel) {
 
 export function renderPickList(q) {
   const ql = q.trim().toLowerCase();
-  const list = S.exercises.filter((e) => e.name.toLowerCase().includes(ql));
+  // Switched-off exercises are hidden here too.
+  const list = S.exercises.filter((e) => !e.off && e.name.toLowerCase().includes(ql));
   let html = '';
   if (ql && !S.exercises.some((e) => e.name.toLowerCase() === ql))
     html += `<button class="pick-create" data-action="pick-create">Create “${esc(q.trim())}”</button>`;
@@ -71,167 +71,6 @@ export function exMenu(i) {
     </div>`);
 }
 
-/* ---------- Routine editor ---------- */
-
-// The routine being edited. Changes stay here until Save.
-// draft = { id, name, items: [routine item], open: index of expanded item, isNew }
-export const editor = { draft: null };
-
-const REST_OPTIONS = [30, 45, 60, 90, 120, 150, 180, 240, 300];
-const STEP_OPTIONS = { kg: [1, 1.25, 2, 2.5, 5], lb: [1, 2.5, 5, 10] };
-
-export function newRoutine() {
-  editor.draft = { id: uid(), name: '', items: [], open: null, isNew: true };
-  openEditor();
-}
-
-export function editRoutine(id) {
-  const r = S.routines.find((x) => x.id === id);
-  editor.draft = { ...r, items: r.items.map((i) => ({ ...i })), open: null, isNew: false };
-  openEditor();
-}
-
-export function addDraftItem(exerciseId) {
-  editor.draft.items.push(newItem(exerciseId));
-  editor.draft.open = editor.draft.items.length - 1;
-}
-
-const itemSummary = (it) => (it.ready || it.w != null ? describe(it) : `${it.sets} × ${it.reps}, ${fmtRest(it.rest)} rest, weight set in first session`);
-
-const restHint = (it) => {
-  const kind = it.kind || exKind(it.exerciseId, S.exercises);
-  return `Rest for ${kind === 'isolation' ? 'isolation exercises' : 'compound lifts'} in this phase: ${restRangeText(it)}${S.experience === 'beginner' ? ' (beginner minimum 60s)' : ''}.`;
-};
-
-function itemFields(it, k) {
-  const kind = it.kind || exKind(it.exerciseId, S.exercises);
-  const steps = STEP_OPTIONS[unit()];
-  const cur = toDisp(stepFor(it));
-  const stepSel = steps.includes(cur) ? cur : steps.reduce((a, b) => (Math.abs(b - cur) < Math.abs(a - cur) ? b : a));
-  const f = (label, html) => `<label class="field"><span class="field-label">${label}</span>${html}</label>`;
-  return `<div class="item-fields">
-    ${f('Sets', `<select data-item="${k}.sets">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `<option${n === it.sets ? ' selected' : ''}>${n}</option>`).join('')}</select>`)}
-    ${f('Reps per set', `<input data-item="${k}.reps" inputmode="numeric" value="${it.reps}" autocomplete="off">`)}
-    ${f(`Weight (${unit()})`, `<input data-item="${k}.w" inputmode="decimal" value="${it.w == null ? '' : toDisp(it.w)}" placeholder="${it.ready ? 'Bodyweight' : 'Set in first session'}" autocomplete="off">`)}
-    ${f('Rest (seconds)', `<input data-item="${k}.rest" inputmode="numeric" value="${it.rest}" autocomplete="off">`)}
-    ${f('Weight step', `<select data-item="${k}.step">${steps.map((v) => `<option value="${v}"${v === stepSel ? ' selected' : ''}>${v} ${unit()}</option>`).join('')}</select>`)}
-    ${f('Type', `<select data-item="${k}.kind">${[['compound', 'Compound lift'], ['isolation', 'Isolation']].map(([v, l]) => `<option value="${v}"${v === kind ? ' selected' : ''}>${l}</option>`).join('')}</select>`)}
-    <p class="item-hint" id="rest-hint-${k}">${restHint(it)}</p>
-  </div>`;
-}
-
-export function openEditor() {
-  const r = editor.draft;
-  openSheet(`<h2 class="sheet-h">${r.isNew ? 'New routine' : 'Edit routine'}</h2>
-    <label class="field"><span class="field-label">Name</span>
-      <input id="draft-name" value="${esc(r.name)}" placeholder="For example, Upper body" autocomplete="off"></label>
-    <h3 class="sub-h">Exercises</h3>
-    <p class="fine">Tap an exercise to set its target. Each workout moves it one tiny step further.</p>
-    <p class="phase-hint">${currentPhase().name} phase: ${rangeText(currentPhase())}.</p>
-    ${
-      r.items.length
-        ? `<ol class="draft-list">${r.items
-            .map((it, k) => {
-              const name = esc(exById(it.exerciseId).name);
-              const open = r.open === k;
-              return `<li class="draft-item${open ? ' is-open' : ''}">
-                <div class="draft-row">
-                  <span class="dot" data-g="${exById(it.exerciseId).group}"></span>
-                  <button class="dl-name" data-action="draft-toggle" data-i="${k}" aria-expanded="${open}">
-                    <span>${name}</span>
-                    <span class="dl-sum" id="dl-sum-${k}">${itemSummary(it)}</span>
-                  </button>
-                  <button class="icon-btn" data-action="draft-move" data-i="${k}" data-id="-1" aria-label="Move ${name} up"${k === 0 ? ' disabled' : ''}>${ICON.up}</button>
-                  <button class="icon-btn" data-action="draft-move" data-i="${k}" data-id="1" aria-label="Move ${name} down"${k === r.items.length - 1 ? ' disabled' : ''}>${ICON.down}</button>
-                  <button class="icon-btn" data-action="draft-remove" data-i="${k}" aria-label="Remove ${name}">${ICON.x}</button>
-                </div>
-                ${open ? itemFields(it, k) : ''}
-              </li>`;
-            })
-            .join('')}</ol>`
-        : `<p class="empty">No exercises yet.</p>`
-    }
-    <button class="btn btn-wide" data-action="draft-add">Add exercise</button>
-    <div class="sheet-actions">
-      ${r.isNew ? `<button class="btn" data-action="close-sheet">Cancel</button>` : `<button class="btn btn-quiet danger" data-action="routine-delete">Delete</button>`}
-      <button class="btn btn-primary" data-action="routine-save">Save routine</button>
-    </div>`, { tall: true });
-}
-
-// Typing in an exercise's target fields.
-export function updateDraftItem(k, field, value) {
-  const it = editor.draft?.items[k];
-  if (!it) return;
-  if (field === 'w') it.w = fromDisp(value);
-  else if (field === 'step') it.step = fromDisp(value);
-  else if (field === 'kind') {
-    it.kind = value;
-    const hint = $(`#rest-hint-${k}`);
-    if (hint) hint.textContent = restHint(it);
-  }
-  else {
-    const n = parseInt(value, 10);
-    it[field] = Number.isFinite(n) ? n : it[field];
-  }
-  it.edited = true;
-  const sum = $(`#dl-sum-${k}`);
-  if (sum) sum.textContent = itemSummary(it);
-}
-
-export function saveRoutine() {
-  const draft = editor.draft;
-  if (!draft.name.trim()) {
-    toast('Give the routine a name.');
-    $('#draft-name')?.focus();
-    return;
-  }
-  if (!draft.items.length) {
-    toast('Add at least one exercise.');
-    return;
-  }
-  const { isNew, open, ...r } = draft;
-  r.name = r.name.trim();
-  // Keep targets inside the current phase's ranges.
-  const p = currentPhase();
-  let adjusted = false;
-  r.items = r.items.map(({ edited, ...it }) => {
-    const before = `${it.sets}/${it.reps}/${it.rest}`;
-    it.sets = p.sets ? clamp(it.sets, p.sets) : Math.min(10, Math.max(1, it.sets));
-    it.reps = clamp(it.reps, p.reps);
-    it.rest = clamp(it.rest, restRange(it, p));
-    if (before !== `${it.sets}/${it.reps}/${it.rest}`) adjusted = true;
-    // Exercise type belongs to the exercise, not this routine.
-    if (it.kind) {
-      const ex = S.exercises.find((e) => e.id === it.exerciseId);
-      if (ex) ex.kind = it.kind;
-      delete it.kind;
-    }
-    // A target you set by hand is your new baseline: start the step cycle fresh.
-    if (edited) Object.assign(it, { ready: it.ready || it.w != null, missed: 0, pendingLever: null });
-    return it;
-  });
-  if (isNew) S.routines.push(r);
-  else S.routines = S.routines.map((x) => (x.id === r.id ? r : x));
-  fitAllRest(); // a type change can affect the same exercise in other routines
-  persist();
-  closeSheet({ cancelled: false });
-  render();
-  toast(
-    adjusted
-      ? `${isNew ? 'Routine created' : 'Routine saved'}. Some targets were adjusted to fit the ${p.name.toLowerCase()} range: ${rangeText(p)}.`
-      : isNew ? 'Routine created.' : 'Routine saved.'
-  );
-}
-
-export function deleteRoutine() {
-  const { id, name } = editor.draft;
-  confirmSheet(`Delete the “${name}” routine? Past workouts stay in your history.`, 'Delete routine', () => {
-    S.routines = S.routines.filter((r) => r.id !== id);
-    persist();
-    render();
-  }, true);
-}
-
 /* ---------- Training phases ---------- */
 
 export function openPhases() {
@@ -256,6 +95,8 @@ export function openPhases() {
 }
 
 /* ---------- Settings ---------- */
+
+const REST_OPTIONS = [30, 45, 60, 90, 120, 150, 180, 240, 300];
 
 export function openSettings() {
   const goals = [1, 2, 3, 4, 5, 6, 7];

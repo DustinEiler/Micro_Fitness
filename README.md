@@ -14,7 +14,8 @@ It's a progressive web app (PWA): it runs in the browser, installs to your home 
 - **Rest timer:** starts automatically when you tick off a set, with a beep and vibration when it's done.
 - **History:** every finished workout, grouped by month.
 - **Progress:** a 12-week consistency view, weekly-goal streak, and a chart per exercise (estimated one-rep max, or max reps for bodyweight moves).
-- **Routines:** create and edit routines with a target for each exercise. Push, Pull and Legs are included to start; your first session with a routine sets the starting weights.
+- **Routines built from muscle groups:** a day like Chest × 2, Triceps × 1, Shoulders × 1. Tick which exercises can come up for each group; every workout uses the ones you've done least recently, so you rotate through them. Pin an exercise to keep it in every workout. Each exercise keeps its own target and tiny-step progress. Push, Pull and Legs are included to start.
+- **Exercise list:** switch off anything you can't do right now (an injury, missing equipment). It's skipped in every routine until you switch it back on, and its progress is kept. Add your own exercises from the routine editor.
 - **Settings:** kg or lb, beginner or experienced, weekly goal, default rest time, and backup export/import.
 
 ## Your data
@@ -53,7 +54,11 @@ js/app.js             Entry point: button actions and event wiring
 js/router.js          Tabs (#train, #history, …) and screen rendering
 js/views/             One file per screen: train, session, history, progress, routines
 js/workout.js         Start, finish and discard workouts
-js/sheets.js          Pop-up sheets: exercise picker, routine editor, settings, backups
+js/editor.js          Routine editor and exercise on/off list
+js/rotation.js        Picks which exercises come up each workout
+js/progression.js     Tiny-step rules
+js/phases.js          Training phases and rest ranges
+js/sheets.js          Pop-up sheets: mid-workout picker, phases, settings, backups
 js/timer.js           Rest timer and workout clock
 js/state.js           Shared app state and saving
 js/store.js           Storage format, defaults, backup parsing

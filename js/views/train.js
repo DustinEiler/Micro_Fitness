@@ -4,6 +4,8 @@ import { S } from '../state.js';
 import { esc } from '../dom.js';
 import { ago } from '../format.js';
 import { weekCounts } from '../queries.js';
+import { itemsForToday } from '../rotation.js';
+import { GROUPS } from '../data.js';
 import { currentPhase, phaseWeek, phaseComplete, rangeText, PHASE_WEEKS } from '../phases.js';
 
 // Current training phase and how far through its 13 weeks you are.
@@ -60,7 +62,7 @@ export function viewTrain() {
       const last = [...S.workouts].reverse().find((w) => w.routineId === r.id);
       return `<li><button class="routine-start" data-action="start" data-id="${r.id}">
         <span class="rs-name">${esc(r.name)}</span>
-        <span class="rs-meta">${r.items.length} exercises${last ? `, last done ${ago(last.startedAt)}` : ''}</span>
+        <span class="rs-meta">${r.groups.map((g) => GROUPS[g.group] || 'Other').join(', ')}. ${itemsForToday(r).length} exercises${last ? `, last done ${ago(last.startedAt)}` : ''}</span>
       </button></li>`;
     })
     .join('');

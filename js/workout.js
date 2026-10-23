@@ -11,6 +11,7 @@ import { unit, toDisp, setScore, setStr, fmtDur, fmtNum, plural } from './format
 import { exById, lastSetsFor, bestScore, workoutVolume, workoutSets } from './queries.js';
 import { suggest, applyResult, describe } from './progression.js';
 import { phaseId } from './phases.js';
+import { itemsForToday } from './rotation.js';
 import { openSheet, confirmSheet, toast } from './ui.js';
 import { render, go } from './router.js';
 
@@ -69,12 +70,16 @@ export function startWorkout(r) {
     go('train');
     return;
   }
+  if (r && !itemsForToday(r).length) {
+    toast(`No exercises are available for ${r.name}. Tick some in the routine, or switch some back on in the exercise list.`);
+    return;
+  }
   S.active = {
     id: uid(),
     name: r ? r.name : 'Workout',
     routineId: r ? r.id : null,
     startedAt: Date.now(),
-    entries: r ? r.items.map((_, k) => plannedEntry(r, k)) : [],
+    entries: r ? itemsForToday(r).map((k) => plannedEntry(r, k)) : [],
   };
   persist();
   go('train');
@@ -110,6 +115,7 @@ export function finishWorkout() {
       if (!item || item.exerciseId !== e.exerciseId) continue; // routine edited mid-workout
       const out = applyResult(item, e.plan, e.sets);
       if (!out) continue;
+      item.lastDone = Date.now(); // moves it to the back of the rotation
       if (out.kind === 'hit') S.stepsTaken = (S.stepsTaken || 0) + 1;
       outcomes.push({ ...out, name: exById(e.exerciseId).name });
     }

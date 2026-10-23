@@ -11,11 +11,12 @@ import { closeSheet, confirmSheet, sheetState, toast } from './ui.js';
 import { render, go } from './router.js';
 import { startTimer, adjustTimer, skipTimer, updateTimer, primeAudio } from './timer.js';
 import { newEntry, startWorkout, finishWorkout, discardWorkout, chooseStep, restFor } from './workout.js';
+import { openPicker, renderPickList, pick, createAndPick, exMenu, openSettings, exportBackup, importBackup, openPhases } from './sheets.js';
 import {
-  openPicker, renderPickList, pick, createAndPick, exMenu,
-  editor, newRoutine, editRoutine, openEditor, saveRoutine, deleteRoutine, addDraftItem, updateDraftItem,
-  openSettings, exportBackup, importBackup, openPhases,
-} from './sheets.js';
+  editor, newRoutine, editRoutine, openEditor, saveRoutine, deleteRoutine, updateDraftItem,
+  togglePick, toggleOpen, changeCount, addGroup, moveGroup, removeGroup,
+  openNewExercise, saveNewExercise, openExerciseList, setExerciseOn,
+} from './editor.js';
 
 const actions = {
   // Navigation and sheets
@@ -105,31 +106,14 @@ const actions = {
   // Routine editor
   'new-routine': () => newRoutine(),
   'edit-routine': (b, { id }) => editRoutine(id),
-  'draft-toggle': (b, { i }) => {
-    editor.draft.open = editor.draft.open === i ? null : i;
-    openEditor();
-  },
-  'draft-move': (b, { i, id }) => {
-    const list = editor.draft.items;
-    const k = i + Number(id);
-    if (k < 0 || k >= list.length) return;
-    [list[i], list[k]] = [list[k], list[i]];
-    editor.draft.open = null;
-    openEditor();
-  },
-  'draft-remove': (b, { i }) => {
-    editor.draft.items.splice(i, 1);
-    editor.draft.open = null;
-    openEditor();
-  },
-  'draft-add': () =>
-    openPicker(
-      (id) => {
-        addDraftItem(id);
-        openEditor();
-      },
-      () => openEditor()
-    ),
+  'draft-toggle': (b, { id }) => toggleOpen(id),
+  'group-count': (b, { id, i }) => changeCount(id, i),
+  'group-add': (b, { id }) => addGroup(id),
+  'group-move': (b, { id, i }) => moveGroup(id, i),
+  'group-remove': (b, { id }) => removeGroup(id),
+  'new-ex': (b, { id }) => openNewExercise(id),
+  'new-ex-save': (b, { id }) => saveNewExercise(id),
+  'exercise-list': () => openExerciseList(),
   'routine-save': () => saveRoutine(),
   'routine-delete': () => deleteRoutine(),
 
@@ -194,7 +178,7 @@ document.addEventListener('input', (e) => {
     editor.draft.name = t.value;
   } else if (t.dataset.item) {
     const [k, field] = t.dataset.item.split('.');
-    updateDraftItem(+k, field, t.value);
+    updateDraftItem(+k, field, t.type === 'checkbox' ? t.checked : t.value);
   }
 });
 
@@ -204,9 +188,13 @@ document.addEventListener('change', (e) => {
     S.progressEx = t.value;
     persist();
     render();
+  } else if (t.dataset.pick) {
+    togglePick(t.dataset.pick, t.checked);
+  } else if (t.dataset.exOn) {
+    setExerciseOn(t.dataset.exOn, t.checked);
   } else if (t.dataset.item) {
     const [k, field] = t.dataset.item.split('.');
-    updateDraftItem(+k, field, t.value);
+    updateDraftItem(+k, field, t.type === 'checkbox' ? t.checked : t.value);
   } else if (t.name === 'experience') {
     S.experience = t.value;
     fitAllRest();

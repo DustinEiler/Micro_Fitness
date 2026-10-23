@@ -23,12 +23,21 @@ Read only the files a task needs.
 | Tiny-step rules: options, rotation, rep cap, hit/miss | `js/progression.js` |
 | Training phases: ranges, 13-week clock, fitting targets | `js/phases.js` |
 | Start/finish workout, PBs, summary | `js/workout.js` |
-| Pop-ups: picker, routine editor, settings, backup | `js/sheets.js` |
+| Routine editor, new exercise, exercise on/off list | `js/editor.js` |
+| Which exercises come up each workout (rotation) | `js/rotation.js` |
+| Pop-ups: mid-workout picker, phases, settings, backup | `js/sheets.js` |
 | Rest timer | `js/timer.js` |
 | History lookups (last sets, bests, streak) | `js/queries.js` |
 | Units, dates, number formats | `js/format.js` |
 | Default exercises/routines, compound vs isolation | `js/data.js` |
 | Styles, colours, dark mode | `css/app.css` (tokens at top of file) |
+
+## Routines and rotation (js/rotation.js)
+
+- Routine: `{ id, name, groups: [{ group, count }], items: [...] }`. Groups are muscle groups from `GROUPS` in `js/data.js` (biceps, triceps and calves are separate; `arms` only holds old custom exercises).
+- `items` are the exercises ticked for the rotation (`picked`), plus unticked ones kept for their progress (`picked: false`). Items are never deleted by the editor, so `plan.index` stays valid.
+- Each workout, per group: pinned items (`always`) first, then least recently done (`lastDone`, set on finish), up to `count`.
+- `exercise.off` (exercise list) skips an exercise in every routine and the mid-workout picker; progress is kept.
 
 ## Progression rules (js/progression.js)
 

@@ -643,3 +643,58 @@ body.has-timer .toast { bottom: calc(var(--tabs-h) + var(--timer-h) + var(--safe
 .po-focus { font-size: 15px; color: var(--muted); }
 .item-hint { grid-column: 1 / -1; font-size: 14px; color: var(--muted); margin: -2px 0 6px; }
 .segmented + .fine { margin-top: 6px; }
+
+/* ---------- Muscle groups in routines ---------- */
+
+.dot[data-g="biceps"] { background: var(--plate-grey); }
+.dot[data-g="triceps"] { background: var(--steel); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.dot[data-g="calves"] { background: var(--plate-yellow); box-shadow: inset 0 0 0 3px var(--surface); outline: 1.5px solid var(--plate-yellow); outline-offset: -1.5px; }
+
+.dg { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.dg-head { display: flex; align-items: center; gap: 8px; }
+.dg-head h3 { flex: 1; font: 600 22px/1.1 var(--font-num); }
+.dg-head .icon-btn { margin: 0; width: 38px; height: 38px; }
+.dg-note { margin: 4px 0 6px 20px; }
+.dg-note strong { color: var(--danger); font-weight: 600; }
+.dg-list { display: grid; }
+.dg-item { border-bottom: 1px solid var(--line); }
+.dg-item.is-open { padding-bottom: 8px; }
+.dg-item.is-off { display: flex; justify-content: space-between; align-items: center; min-height: 48px; padding-left: 40px; }
+.dg-row { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+.dl-off { color: var(--muted); padding: 8px 0; }
+.dg-head + .dg-note + .dg-list + .btn-text { margin-top: 2px; }
+
+.stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stepper button { width: 40px; height: 38px; border: 0; background: var(--field); font: 600 22px/1 var(--font-num); }
+.stepper button:disabled { opacity: 0.35; }
+.stepper-n { min-width: 30px; text-align: center; font: 600 20px/1 var(--font-num); }
+
+.tick { position: relative; flex: none; width: 30px; height: 30px; }
+.tick input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.tick-box { display: grid; place-items: center; width: 30px; height: 30px; border: 2px solid var(--line); border-radius: 8px; color: transparent; pointer-events: none; }
+.tick-box svg { width: 20px; height: 20px; }
+.tick input:checked + .tick-box { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.tick input:focus-visible + .tick-box { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+.toggle-field { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin: 4px 0 12px; font-weight: 500; }
+.toggle-field input { width: 22px; height: 22px; accent-color: var(--primary); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--field); font-weight: 600; }
+
+.rc-groups { display: grid; gap: 4px; margin: 6px 0 10px; }
+.rc-groups li { display: flex; align-items: center; gap: 8px; }
+.rc-groups li .fine { margin-left: auto; }
+.rc-next-h { font: 600 17px/1.2 var(--font-num); color: var(--muted); margin-top: 6px; }
+.btn-wide + .btn-wide { margin-top: 10px; }
+
+.ex-list { display: grid; }
+.switch-row { display: flex; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--line); position: relative; cursor: pointer; }
+.switch-row > span:first-child { flex: 1; }
+.ex-list .is-off .switch-row > span:first-child { color: var(--muted); text-decoration: line-through; }
+.switch-row input { position: absolute; right: 0; width: 52px; height: 32px; margin: 0; opacity: 0; cursor: pointer; }
+.switch { flex: none; width: 52px; height: 32px; border-radius: 16px; background: var(--line); position: relative; pointer-events: none; transition: background 0.15s; }
+.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform 0.15s; }
+.switch-row input:checked + .switch { background: var(--plate-green); }
+.switch-row input:checked + .switch::after { transform: translateX(20px); }
+.switch-row input:focus-visible + .switch { outline: 3px solid var(--primary); outline-offset: 2px; }
