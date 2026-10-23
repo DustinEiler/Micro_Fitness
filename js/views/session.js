@@ -7,12 +7,13 @@ import { unit, toDisp, setStr, fmtElapsed } from '../format.js';
 import { exById, lastSetsFor } from '../queries.js';
 import { GROUPS } from '../data.js';
 import { describe } from '../progression.js';
+import { fmtRest } from '../phases.js';
 
 // The tiny-step panel for exercises that came from a routine.
 function planBlock(e, i, name) {
   const p = e.plan;
   if (p.calibrate)
-    return `<div class="plan"><p class="plan-note">First time with this routine. Log what feels right and it becomes your starting point. Aim for ${p.target.sets} × ${p.target.reps}, ${p.target.rest}s rest.</p></div>`;
+    return `<div class="plan"><p class="plan-note">First time with this routine. Log what feels right and it becomes your starting point. Aim for ${p.target.sets} × ${p.target.reps}, ${fmtRest(p.target.rest)} rest.</p></div>`;
   return `<div class="plan">
     <p class="plan-base">Baseline: ${describe(p.base)}</p>
     ${

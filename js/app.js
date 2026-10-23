@@ -6,7 +6,7 @@ import { S, setState, persist, persistSoon } from './state.js';
 import { freshState } from './store.js';
 import { $, $$last } from './dom.js';
 import { fromDisp } from './format.js';
-import { ensureFitted, startPhase, PHASES } from './phases.js';
+import { ensureFitted, startPhase, fitAllRest, PHASES } from './phases.js';
 import { closeSheet, confirmSheet, sheetState, toast } from './ui.js';
 import { render, go } from './router.js';
 import { startTimer, adjustTimer, skipTimer, updateTimer, primeAudio } from './timer.js';
@@ -207,6 +207,11 @@ document.addEventListener('change', (e) => {
   } else if (t.dataset.item) {
     const [k, field] = t.dataset.item.split('.');
     updateDraftItem(+k, field, t.value);
+  } else if (t.name === 'experience') {
+    S.experience = t.value;
+    fitAllRest();
+    persist();
+    render();
   } else if (t.name === 'units') {
     S.units = t.value;
     persist();

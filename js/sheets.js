@@ -6,7 +6,8 @@ import { uid, parseBackup } from './store.js';
 import { $, esc, ICON } from './dom.js';
 import { fmtClock, unit, toDisp, fromDisp } from './format.js';
 import { newItem, describe } from './progression.js';
-import { PHASES, PHASE_ORDER, PHASE_WEEKS, currentPhase, phaseId, phaseWeek, phaseComplete, nextPhaseId, rangeText, stepFor, clamp, ensureFitted } from './phases.js';
+import { PHASES, PHASE_ORDER, PHASE_WEEKS, currentPhase, phaseId, phaseWeek, phaseComplete, nextPhaseId, rangeText, stepFor, clamp, ensureFitted, restRange, restRangeText, fitAllRest, fmtRest } from './phases.js';
+import { exKind } from './data.js';
 import { exById } from './queries.js';
 import { GROUPS } from './data.js';
 import { openSheet, closeSheet, confirmSheet, sheetState, toast } from './ui.js';
@@ -95,9 +96,15 @@ export function addDraftItem(exerciseId) {
   editor.draft.open = editor.draft.items.length - 1;
 }
 
-const itemSummary = (it) => (it.ready || it.w != null ? describe(it) : `${it.sets} × ${it.reps}, ${it.rest}s rest, weight set in first session`);
+const itemSummary = (it) => (it.ready || it.w != null ? describe(it) : `${it.sets} × ${it.reps}, ${fmtRest(it.rest)} rest, weight set in first session`);
+
+const restHint = (it) => {
+  const kind = it.kind || exKind(it.exerciseId, S.exercises);
+  return `Rest for ${kind === 'isolation' ? 'isolation exercises' : 'compound lifts'} in this phase: ${restRangeText(it)}${S.experience === 'beginner' ? ' (beginner minimum 60s)' : ''}.`;
+};
 
 function itemFields(it, k) {
+  const kind = it.kind || exKind(it.exerciseId, S.exercises);
   const steps = STEP_OPTIONS[unit()];
   const cur = toDisp(stepFor(it));
   const stepSel = steps.includes(cur) ? cur : steps.reduce((a, b) => (Math.abs(b - cur) < Math.abs(a - cur) ? b : a));
@@ -108,6 +115,8 @@ function itemFields(it, k) {
     ${f(`Weight (${unit()})`, `<input data-item="${k}.w" inputmode="decimal" value="${it.w == null ? '' : toDisp(it.w)}" placeholder="${it.ready ? 'Bodyweight' : 'Set in first session'}" autocomplete="off">`)}
     ${f('Rest (seconds)', `<input data-item="${k}.rest" inputmode="numeric" value="${it.rest}" autocomplete="off">`)}
     ${f('Weight step', `<select data-item="${k}.step">${steps.map((v) => `<option value="${v}"${v === stepSel ? ' selected' : ''}>${v} ${unit()}</option>`).join('')}</select>`)}
+    ${f('Type', `<select data-item="${k}.kind">${[['compound', 'Compound lift'], ['isolation', 'Isolation']].map(([v, l]) => `<option value="${v}"${v === kind ? ' selected' : ''}>${l}</option>`).join('')}</select>`)}
+    <p class="item-hint" id="rest-hint-${k}">${restHint(it)}</p>
   </div>`;
 }
 
@@ -155,6 +164,11 @@ export function updateDraftItem(k, field, value) {
   if (!it) return;
   if (field === 'w') it.w = fromDisp(value);
   else if (field === 'step') it.step = fromDisp(value);
+  else if (field === 'kind') {
+    it.kind = value;
+    const hint = $(`#rest-hint-${k}`);
+    if (hint) hint.textContent = restHint(it);
+  }
   else {
     const n = parseInt(value, 10);
     it[field] = Number.isFinite(n) ? n : it[field];
@@ -184,14 +198,21 @@ export function saveRoutine() {
     const before = `${it.sets}/${it.reps}/${it.rest}`;
     it.sets = p.sets ? clamp(it.sets, p.sets) : Math.min(10, Math.max(1, it.sets));
     it.reps = clamp(it.reps, p.reps);
-    it.rest = clamp(it.rest, p.rest);
+    it.rest = clamp(it.rest, restRange(it, p));
     if (before !== `${it.sets}/${it.reps}/${it.rest}`) adjusted = true;
+    // Exercise type belongs to the exercise, not this routine.
+    if (it.kind) {
+      const ex = S.exercises.find((e) => e.id === it.exerciseId);
+      if (ex) ex.kind = it.kind;
+      delete it.kind;
+    }
     // A target you set by hand is your new baseline: start the step cycle fresh.
     if (edited) Object.assign(it, { ready: it.ready || it.w != null, missed: 0, pendingLever: null });
     return it;
   });
   if (isNew) S.routines.push(r);
   else S.routines = S.routines.map((x) => (x.id === r.id ? r : x));
+  fitAllRest(); // a type change can affect the same exercise in other routines
   persist();
   closeSheet({ cancelled: false });
   render();
@@ -244,6 +265,13 @@ export function openSettings() {
         <label><input type="radio" name="units" value="kg"${S.units === 'kg' ? ' checked' : ''}><span>Kilograms</span></label>
         <label><input type="radio" name="units" value="lb"${S.units === 'lb' ? ' checked' : ''}><span>Pounds</span></label>
       </div>
+    </fieldset>
+    <fieldset class="field"><legend class="field-label">Experience</legend>
+      <div class="segmented">
+        <label><input type="radio" name="experience" value="beginner"${S.experience === 'beginner' ? ' checked' : ''}><span>Beginner</span></label>
+        <label><input type="radio" name="experience" value="experienced"${S.experience !== 'beginner' ? ' checked' : ''}><span>Experienced</span></label>
+      </div>
+      <span class="fine">Beginners always rest at least 60 seconds between sets, so form holds up as you tire.</span>
     </fieldset>
     <label class="field"><span class="field-label">Weekly goal</span>
       <select id="set-goal">${goals.map((g) => `<option value="${g}"${g === S.weeklyGoal ? ' selected' : ''}>${g} workout${g === 1 ? '' : 's'} a week</option>`).join('')}</select></label>

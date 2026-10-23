@@ -11,6 +11,19 @@ export const GROUPS = {
   other: 'Other',
 };
 
+// Isolation exercises work one muscle group and rest at the shorter end of a
+// phase's range. Everything else counts as a compound lift.
+const ISOLATION = new Set([
+  'cable-fly', 'leg-curl', 'leg-ext', 'calf-raise', 'lateral-raise', 'face-pull', 'rear-delt',
+  'curl', 'hammer-curl', 'pushdown', 'skull', 'leg-raise', 'cable-crunch', 'ab-wheel',
+]);
+
+// An exercise's kind: its own setting if you've changed it, else the default.
+export function exKind(id, exercises = []) {
+  const ex = exercises.find((e) => e.id === id);
+  return ex?.kind || (ISOLATION.has(id) ? 'isolation' : 'compound');
+}
+
 export const DEFAULT_EXERCISES = [
   { id: 'bench', name: 'Bench press', group: 'chest' },
   { id: 'incline-db', name: 'Incline dumbbell press', group: 'chest' },

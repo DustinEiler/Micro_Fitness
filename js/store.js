@@ -4,7 +4,7 @@
 import { DEFAULT_EXERCISES, DEFAULT_ROUTINES } from './data.js';
 
 export const STORAGE_KEY = 'micro-fitness.v1';
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const uid = () =>
   Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-5);
@@ -15,6 +15,7 @@ export function freshState() {
     units: 'kg',
     weeklyGoal: 3,
     rest: 90,
+    experience: 'experienced',
     exercises: DEFAULT_EXERCISES.map((e) => ({ ...e })),
     routines: DEFAULT_ROUTINES.map((r) => ({ ...r, items: r.items.map((i) => ({ ...i, w: null, ready: false, missed: 0 })) })),
     workouts: [],
@@ -43,6 +44,12 @@ function migrate(data) {
     data.phase = { id: 'hypertrophy', startedAt: Date.now(), history: [] };
     data.phaseFitPending = true;
     data.version = 3;
+  }
+  if (data.version < 4) {
+    // v4: new rest ranges (hypertrophy 30–90s, strength/power 2–5 min) and
+    // compound/isolation rest. Refit targets on boot.
+    data.phaseFitPending = true;
+    data.version = 4;
   }
   return data;
 }

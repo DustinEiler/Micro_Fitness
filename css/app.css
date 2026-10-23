@@ -641,3 +641,5 @@ body.has-timer .toast { bottom: calc(var(--tabs-h) + var(--timer-h) + var(--safe
 .phase-option.is-current .po-tag { background: var(--primary); color: var(--primary-ink); }
 .po-range { font-weight: 600; font-size: 15px; }
 .po-focus { font-size: 15px; color: var(--muted); }
+.item-hint { grid-column: 1 / -1; font-size: 14px; color: var(--muted); margin: -2px 0 6px; }
+.segmented + .fine { margin-top: 6px; }

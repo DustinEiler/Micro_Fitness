@@ -15,16 +15,18 @@
 // retried after a miss, and how many misses in a row.
 
 import { toDisp, unit, e1rm } from './format.js';
-import { currentPhase, fitItem, stepFor, clamp } from './phases.js';
+import { currentPhase, fitItem, stepFor, clamp, restRange, fmtRest } from './phases.js';
 
 export const LEVER_ORDER = ['reps', 'weight', 'rest'];
 export const REST_STEP = 5;
 
-// New exercise in a routine: bottom of the rep range and longest rest,
-// so there's room to climb.
+// New exercise in a routine: bottom of the rep range and longest rest
+// allowed for it, so there's room to climb.
 export function newItem(exerciseId) {
   const p = currentPhase();
-  return { exerciseId, sets: p.sets ? p.sets[0] : 3, reps: p.reps[0], w: null, rest: p.rest[1], ready: false, missed: 0 };
+  const item = { exerciseId, sets: p.sets ? p.sets[0] : 3, reps: p.reps[0], w: null, ready: false, missed: 0 };
+  item.rest = restRange(item, p)[1];
+  return item;
 }
 
 // Smallest rep count at the heavier weight that still beats the old
@@ -54,7 +56,7 @@ export function stepOptions(item) {
 
   const opts = [{ lever: 'reps', label: '+1 rep', target: { ...base, reps: base.reps + 1 } }];
   if (item.w) opts.push({ lever: 'weight', label: stepLabel, target: { ...base, w: base.w + step } });
-  if (item.rest - REST_STEP >= p.rest[0]) opts.push({ lever: 'rest', label: `−${REST_STEP}s rest`, target: { ...base, rest: base.rest - REST_STEP } });
+  if (item.rest - REST_STEP >= restRange(item, p)[0]) opts.push({ lever: 'rest', label: `−${REST_STEP}s rest`, target: { ...base, rest: base.rest - REST_STEP } });
   return { opts, capped: false };
 }
 
@@ -122,5 +124,5 @@ export function applyResult(item, plan, sets) {
 }
 
 export function describe(t) {
-  return `${t.sets} × ${t.reps}${t.w ? ` @ ${toDisp(t.w)} ${unit()}` : ''}, ${t.rest}s rest`;
+  return `${t.sets} × ${t.reps}${t.w ? ` @ ${toDisp(t.w)} ${unit()}` : ''}, ${fmtRest(t.rest)} rest`;
 }

@@ -27,7 +27,7 @@ Read only the files a task needs.
 | Rest timer | `js/timer.js` |
 | History lookups (last sets, bests, streak) | `js/queries.js` |
 | Units, dates, number formats | `js/format.js` |
-| Default exercises/routines | `js/data.js` |
+| Default exercises/routines, compound vs isolation | `js/data.js` |
 | Styles, colours, dark mode | `css/app.css` (tokens at top of file) |
 
 ## Progression rules (js/progression.js)
@@ -43,8 +43,9 @@ Read only the files a task needs.
 
 ## Phases (js/phases.js)
 
-- `S.phase = { id, startedAt, history }`. Phases: endurance 15–20 reps, 30–60s; hypertrophy 6–12 reps, 3–6 sets, 60–90s; strength 1–5 reps, 120–180s; power 1–10 reps, 120–180s. Each runs 13 weeks; then the Train screen prompts for the next (cycle order: endurance → hypertrophy → strength → power).
-- Owner set rep ranges and strength rest; hypertrophy and power rest ranges were defaults chosen by Claude. Check with the owner before changing phase rules.
+- `S.phase = { id, startedAt, history }`. Phases: endurance 15–20 reps, 30–60s rest; hypertrophy 6–12 reps, 3–6 sets, 30–90s; strength 1–5 reps, 2–5 min; power 1–10 reps, 2–5 min. Each runs 13 weeks; then the Train screen prompts for the next (cycle order: endurance → hypertrophy → strength → power). All ranges come from the owner. Check with the owner before changing phase rules.
+- **Rest per exercise** (`restRange`): compound lifts use the longer half of the phase's rest range, isolation exercises the shorter half (split at the midpoint). Kind comes from `exKind` in `js/data.js` (`ISOLATION` set, or the exercise's own `kind`). `S.experience === 'beginner'` raises every rest minimum to 60s. Call `fitAllRest()` after changing either.
+- Conditioning (10–40s, HIIT/Tabata) is intentionally not a phase: it's timed work, a possible separate feature.
 - Changing phase calls `fitItem` on every routine item: clamps into the new ranges and, if reps change, recalculates weight from estimated 1RM (rounded down to the weight step).
 - New/imported/upgraded data sets `phaseFitPending`; `ensureFitted()` runs it once.
 
