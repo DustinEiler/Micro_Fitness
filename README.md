@@ -87,7 +87,7 @@ manifest.webmanifest  Install settings: name, icons, colours
 icons/                App icons
 ```
 
-See `CLAUDE.md` for conventions when changing the code.
+See `CLAUDE.md` for conventions when changing the code, and `ROADMAP.md` for what's planned next (quests, avatars, friends).
 
 ## Turning it into a store app later
 
