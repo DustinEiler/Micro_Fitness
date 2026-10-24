@@ -118,6 +118,12 @@ export function openSettings() {
       <select id="set-goal">${goals.map((g) => `<option value="${g}"${g === S.weeklyGoal ? ' selected' : ''}>${g} workout${g === 1 ? '' : 's'} a week</option>`).join('')}</select></label>
     <label class="field"><span class="field-label">Rest timer for empty workouts</span>
       <select id="set-rest">${REST_OPTIONS.map((s) => `<option value="${s}"${s === S.rest ? ' selected' : ''}>${fmtClock(s)}</option>`).join('')}</select></label>
+    <h3 class="sub-h">Plan and goal</h3>
+    <p class="fine">${S.goal ? 'Answer the questions again to build a fresh plan, or just set a new goal.' : 'Answer a few questions about your goals, time and experience, and get a plan built for you.'}</p>
+    <div class="sheet-actions">
+      <button class="btn" data-action="setup">${S.profile ? 'Build a new plan' : 'Set up a plan'}</button>
+      ${S.profile?.days?.length ? '<button class="btn" data-action="new-goal">Set a new goal</button>' : ''}
+    </div>
     <h3 class="sub-h">Your data</h3>
     <p class="fine">Your workouts are stored only on this device. Export a backup now and then so you can restore your history on a new phone.</p>
     <div class="sheet-actions">

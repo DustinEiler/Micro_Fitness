@@ -6,6 +6,7 @@ It's a progressive web app (PWA): it runs in the browser, installs to your home 
 
 ## What it does
 
+- **Intro and SMART goal:** on first launch, a few questions (goal, why, what you enjoy, which days, session length, equipment, experience, past barriers, injuries, health and sleep) build a plan: a training phase, routines sized to your time and equipment, a weekly schedule, and a specific, measurable, time-bound goal. The Train screen shows the goal, your reason, progress and what's next up. Run it again any time from Settings.
 - **Train:** start a saved routine or an empty workout. Your weekly goal is shown as plates loaded on a barbell.
 - **Tiny steps:** every routine exercise has a target (for example 4 × 13 @ 135 lb, 60s rest). Each workout suggests one small step (+1 rep, +5 lb / 2.5 kg, or −5s rest), rotating between them; tap a different step if you prefer. Hit it and it becomes your new baseline. Miss it and you repeat it next time; miss twice and it tries a different kind of step.
 - **Training phases:** endurance (15–20 reps, 30–60s rest), hypertrophy (6–12 reps, 3–6 sets, 30–90s rest), maximum strength (1–5 reps, 2–5 min rest) and power (1–10 reps, 2–5 min rest). Each phase runs 13 weeks, then the app prompts you to switch. All targets stay inside the phase's ranges. Once you hit the top of the rep range on every set, the next step is always more weight, with reps lowered just enough to keep it a tiny step. Switching phase converts your targets using your estimated one-rep max.
@@ -60,6 +61,9 @@ js/app.js             Entry point: button actions and event wiring
 js/router.js          Tabs (#train, #history, …) and screen rendering
 js/views/             One file per screen: train, session, history, progress, routines
 js/workout.js         Start, finish and discard workouts
+js/intro.js           First-run questions, goal and plan preview
+js/planner.js         Builds the plan from your answers
+js/goal.js            Saves the plan; goal progress and next up
 js/editor.js          Routine editor and exercise on/off list
 js/rotation.js        Picks which exercises come up each workout
 js/progression.js     Tiny-step rules

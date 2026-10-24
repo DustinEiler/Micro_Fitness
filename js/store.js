@@ -4,7 +4,7 @@
 import { DEFAULT_EXERCISES, DEFAULT_ROUTINES, GROUP_FIXES } from './data.js';
 
 export const STORAGE_KEY = 'micro-fitness.v1';
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export const uid = () =>
   Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-5);
@@ -26,6 +26,10 @@ export function freshState() {
     stepsTaken: 0,
     phase: { id: 'hypertrophy', startedAt: Date.now(), history: [] },
     phaseFitPending: true, // app.js fits routine targets to the phase on boot
+    onboarding: 'pending', // 'pending' shows the intro; 'offer' shows a card on Train; 'done' or 'skipped'
+    profile: null, // intro answers (js/planner.js)
+    plan: null, // { order, days } from the intro
+    goal: null, // the SMART goal (js/goal.js)
     active: null,
     timer: null,
     progressEx: null,
@@ -107,6 +111,12 @@ function migrate(data) {
       }
     }
     data.version = 6;
+  }
+  if (data.version < 7) {
+    // v7: the intro and SMART goals. Existing users aren't sent through the
+    // intro; the Train screen offers it instead.
+    data.onboarding = data.onboarding || 'offer';
+    data.version = 7;
   }
   return data;
 }

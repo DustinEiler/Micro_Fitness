@@ -7,6 +7,39 @@ import { weekCounts } from '../queries.js';
 import { itemsForToday } from '../rotation.js';
 import { GROUPS } from '../data.js';
 import { currentPhase, phaseWeek, phaseComplete, rangeText, PHASE_WEEKS } from '../phases.js';
+import { goalProgress, nextRoutine, todayLine } from '../goal.js';
+
+const pctText = (n) => `${Math.round(n * 10) / 10}%`;
+
+// The SMART goal: statement, reason, and progress on each measure.
+function goalCard() {
+  if (!S.goal) {
+    if (S.onboarding !== 'offer') return '';
+    return `<section class="goal-card goal-offer">
+      <h2 class="gc-h">Set a goal, get a plan</h2>
+      <p>Answer a few questions about your goals, time and experience, and Micro Fitness builds routines to match.</p>
+      <div class="gc-actions"><button class="btn btn-primary btn-small" data-action="setup">Set up my plan</button><button class="btn btn-quiet btn-small" data-action="setup-later">Not now</button></div>
+    </section>`;
+  }
+  const g = goalProgress();
+  const bar = (v, max) => `<span class="gc-bar"><span style="width:${Math.min(100, max ? (v / max) * 100 : 0)}%"></span></span>`;
+  const lift = g.lift
+    ? `<div class="gc-row"><span class="gc-label">${esc(g.lift.name)}</span><span class="gc-val">${g.lift.started ? `+${pctText(g.lift.gained)} of +${g.lift.target}%` : 'Starts next session'}</span>${bar(g.lift.gained, g.lift.target)}</div>`
+    : '';
+  const hit = g.workouts >= g.target && (!g.lift || g.lift.gained >= g.lift.target);
+  return `<section class="goal-card${g.ended ? ' is-ended' : ''}">
+    <h2 class="gc-h">${g.ended ? (hit ? 'Goal reached' : 'Goal date reached') : 'Your goal'}</h2>
+    <p class="gc-text">${esc(S.goal.statement)}</p>
+    ${S.goal.whyText ? `<p class="gc-why">“${esc(S.goal.whyText)}”</p>` : ''}
+    <div class="gc-row"><span class="gc-label">Workouts</span><span class="gc-val">${g.workouts} of ${g.target}</span>${bar(g.workouts, g.target)}</div>
+    ${lift}
+    ${
+      g.ended
+        ? `<p class="gc-foot">${hit ? 'You did it. Set the next goal while the momentum’s there.' : 'Every workout you did still counts. Set a new goal and keep going.'}</p><button class="btn btn-primary btn-small" data-action="new-goal">Set my next goal</button>`
+        : `<p class="gc-foot">${g.daysLeft} day${g.daysLeft === 1 ? '' : 's'} left. ${esc(todayLine())}</p>`
+    }
+  </section>`;
+}
 
 // Current training phase and how far through its 13 weeks you are.
 function phaseCard() {
@@ -57,16 +90,19 @@ export function viewTrain() {
       : done === S.weeklyGoal
         ? `Weekly goal met: ${done} of ${S.weeklyGoal} workouts.`
         : `Weekly goal beaten: ${done} workouts against a goal of ${S.weeklyGoal}.`;
-  const rows = S.routines
+  const next = nextRoutine();
+  const ordered = next ? [next, ...S.routines.filter((r) => r !== next)] : S.routines;
+  const rows = ordered
     .map((r) => {
       const last = [...S.workouts].reverse().find((w) => w.routineId === r.id);
-      return `<li><button class="routine-start" data-action="start" data-id="${r.id}">
-        <span class="rs-name">${esc(r.name)}</span>
+      return `<li><button class="routine-start${r === next ? ' is-next' : ''}" data-action="start" data-id="${r.id}">
+        <span class="rs-name">${esc(r.name)}${r === next ? ' <span class="rs-tag">Next up</span>' : ''}</span>
         <span class="rs-meta">${r.groups.map((g) => GROUPS[g.group] || 'Other').join(', ')}. ${itemsForToday(r).length} exercises${last ? `, last done ${ago(last.startedAt)}` : ''}</span>
       </button></li>`;
     })
     .join('');
   return `
+    ${goalCard()}
     ${phaseCard()}
     <section class="week">
       ${barbell(done, S.weeklyGoal)}

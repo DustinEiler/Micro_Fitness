@@ -23,6 +23,9 @@ Read only the files a task needs.
 | Tiny-step rules: options, rotation, rep cap, hit/miss | `js/progression.js` |
 | Training phases: ranges, 13-week clock, fitting targets | `js/phases.js` |
 | Start/finish workout, PBs, summary | `js/workout.js` |
+| First-run intro screens (questions, SMART goal, plan preview) | `js/intro.js` |
+| Building a plan from the intro answers; tips | `js/planner.js` |
+| Saving the plan, goal progress, Next up, schedule | `js/goal.js` |
 | Routine editor, new exercise, exercise on/off list | `js/editor.js` |
 | Which exercises come up each workout (rotation) | `js/rotation.js` |
 | Pop-ups: mid-workout picker, phases, settings, backup | `js/sheets.js` |
@@ -32,6 +35,15 @@ Read only the files a task needs.
 | Exercise library: 406 exercises, equipment, flags | `js/library.js` |
 | Muscle groups, starter routines, compound vs isolation | `js/data.js` |
 | Styles, colours, dark mode | `css/app.css` (tokens at top of file) |
+
+## Intro and SMART goals (js/intro.js, js/planner.js, js/goal.js)
+
+- First launch (`S.onboarding === 'pending'`) shows the intro. Existing users get an offer card on Train (`'offer'`). Settings has "Build a new plan" and "Set a new goal".
+- Questions follow the owner's list: goal, why, enjoyment, days (actual weekdays, max 6), session length, place and equipment, experience, past barriers, injury areas, health check and sleep, then the SMART goal and plan preview.
+- Plan rules (`buildPlan`): phase from goal (beginners or a health flag start strength/power with a hypertrophy foundation); split by days (1–2 full body, 3 full body for beginners/fat loss/health/endurance else push/pull/legs, 4 upper/lower, 5 PPL + upper/lower, 6 PPL ×2); each routine sized by `estimateMinutes` to fit the session (3–7 exercises, extra sets if time spare, shorter rests if over); only exercises the person's equipment allows, no advanced moves for beginners, `INJURY_RISK` moves switched off.
+- Goal: workouts target = days × weeks, plus one lift improved by a % (`recommendedPct` by experience and timeframe; >1.5× is flagged ambitious). Progress compares best e1RM (or reps for bodyweight) during the goal to the session before it started (or the first one after).
+- Research behind it: ACE SMART guide, Philly YMCA, SM Personal Training, Freeform Fitness (4–6 exercises, reassess every 4–8 weeks), CDC adult guidelines (150 min moderate activity, strength 2+ days, all major muscles). The SELF article and ExRx block automated reading.
+- Health answers are only used to set beginner mode and show a see-your-doctor note. Never give medical advice in copy.
 
 ## Routines and rotation (js/rotation.js)
 

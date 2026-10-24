@@ -7,6 +7,7 @@ import { freshState } from './store.js';
 import { $, $$last } from './dom.js';
 import { fromDisp } from './format.js';
 import { ensureFitted, startPhase, fitAllRest, PHASES } from './phases.js';
+import { initIntro, openIntro } from './intro.js';
 import { closeSheet, confirmSheet, sheetState, toast } from './ui.js';
 import { render, go } from './router.js';
 import { startTimer, adjustTimer, skipTimer, updateTimer, primeAudio } from './timer.js';
@@ -117,6 +118,21 @@ const actions = {
   'exercise-list': () => openExerciseList(),
   'routine-save': () => saveRoutine(),
   'routine-delete': () => deleteRoutine(),
+
+  // Intro and goals
+  setup: () => {
+    closeSheet({ cancelled: false });
+    openIntro('full');
+  },
+  'new-goal': () => {
+    closeSheet({ cancelled: false });
+    openIntro('goal');
+  },
+  'setup-later': () => {
+    S.onboarding = 'skipped';
+    persist();
+    render();
+  },
 
   // Training phases
   phase: () => openPhases(),
@@ -254,6 +270,8 @@ document.addEventListener('visibilitychange', () => {
 // New or upgraded data: move routine targets inside the phase ranges once.
 ensureFitted();
 persist();
+initIntro();
+if (S.onboarding === 'pending') openIntro('full');
 
 render();
 

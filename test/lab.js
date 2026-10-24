@@ -13,6 +13,8 @@ import { toDisp, fromDisp } from '../js/format.js';
 import { newItem, suggest, applyResult } from '../js/progression.js';
 import { PHASES, ensureFitted, fitItem, restRange, PHASE_WEEKS } from '../js/phases.js';
 import { itemsForToday } from '../js/rotation.js';
+import { defaultProfile, buildPlan, PLACES, estimateMinutes, recommendedPct, isAmbitious, INJURY_RISK } from '../js/planner.js';
+import { applyPlan, nextRoutine, goalProgress } from '../js/goal.js';
 import { DEFAULT_EXERCISES, DEFAULT_ROUTINES, EQUIPMENT, GROUPS } from '../js/data.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -199,6 +201,7 @@ function sampleHistory(weeks = 8) {
       S.workouts.push({ id: uid(), name: r.name, routineId: r.id, phase: S.phase.id, startedAt: t, endedAt: t + (45 + Math.round(rand() * 20)) * 60e3, entries });
     }
   S.phaseFitPending = false;
+  S.onboarding = 'offer'; // sample data skips the intro; the Train screen offers it
   return { ...S, active: null, timer: null };
 }
 
@@ -275,6 +278,14 @@ const near = (a, b) => Math.abs(a - b) < 0.01;
 const kgItem = (exerciseId, sets, reps, w, rest) => ({ ...newItem(exerciseId), sets, reps, w, rest, ready: true });
 const failing = (t) => Array.from({ length: t.sets }, (_, j) => ({ w: t.w, r: j ? t.reps : t.reps - 3, done: true }));
 const passing = (t) => Array.from({ length: t.sets }, () => ({ w: t.w, r: t.reps, done: true }));
+
+// An intro answer set for planner checks.
+const profile = (o = {}) => ({
+  ...defaultProfile(), goal: 'muscle', why: ['energy'], days: [1, 3, 5], minutes: 45, place: 'gym',
+  equip: [...PLACES.gym.equip], experience: 'some', health: 'no', sleep: 'good', weeks: 13, ...o,
+});
+const groupsOf = (plan) => new Set(plan.routines.flatMap((r) => r.groups.map((g) => g.group)));
+const exOf = (id) => S.exercises.find((e) => e.id === id);
 
 const CHECKS = [
   ['Starter routines fit the hypertrophy ranges', () => {
@@ -400,6 +411,63 @@ const CHECKS = [
     const ht = s.exercises.find((e) => e.id === 'hip-thrust');
     const groups = s.routines[0].groups.map((g) => `${g.group}:${g.count}`).join(' ');
     return (ht.group === 'glutes' && ht.off === true && ht.equip.includes('barbell') && groups === 'legs:1 glutes:1' && s.exercises.length === DEFAULT_EXERCISES.length) || `hip thrust ${ht.group}, groups ${groups}, ${s.exercises.length} exercises`;
+  }],
+  ['Plan: 3 days for a beginner is full body, covering every major muscle', () => {
+    fresh();
+    const plan = buildPlan(profile({ experience: 'new' }));
+    const g = groupsOf(plan);
+    const ok = plan.routines.length === 3 && plan.routines.every((r) => r.name.startsWith('Full body')) && ['legs', 'chest', 'back', 'shoulders'].every((x) => g.has(x));
+    return ok || `got ${plan.routines.map((r) => r.name).join(', ')}`;
+  }],
+  ['Plan: 4 days is upper and lower body', () => {
+    fresh();
+    const plan = buildPlan(profile({ days: [1, 2, 4, 5] }));
+    return plan.routines.map((r) => r.name).join(',') === 'Upper body A,Lower body A,Upper body B,Lower body B' || plan.routines.map((r) => r.name).join(', ');
+  }],
+  ['Plan: no equipment means bodyweight exercises only', () => {
+    fresh();
+    const plan = buildPlan(profile({ place: 'none', equip: [] }));
+    const bad = plan.routines.flatMap((r) => r.items).filter((it) => exOf(it.exerciseId).equip.length);
+    return (!bad.length && plan.routines.every((r) => r.items.length)) || `${bad.length} need equipment`;
+  }],
+  ['Plan: sore knees switch off jumps, and none are ticked', () => {
+    fresh();
+    const plan = buildPlan(profile({ injuries: ['knees'], goal: 'power', experience: 'experienced' }));
+    const ticked = plan.routines.flatMap((r) => r.items.map((it) => it.exerciseId)).filter((id) => INJURY_RISK.knees.includes(id));
+    return (plan.risky.includes('box-jump') && !ticked.length) || `ticked: ${ticked.join(', ')}`;
+  }],
+  ['Plan: beginners wanting strength start with a foundation phase', () => {
+    fresh();
+    const plan = buildPlan(profile({ goal: 'strength', experience: 'new' }));
+    return (plan.phase.id === 'hypertrophy' && plan.phase.foundation && !plan.routines.flatMap((r) => r.items).some((it) => exOf(it.exerciseId).advanced)) || `phase ${plan.phase.id}`;
+  }],
+  ['Plan: shorter sessions get fewer exercises, and fit the time', () => {
+    fresh();
+    const short = buildPlan(profile({ minutes: 30 }));
+    const long = buildPlan(profile({ minutes: 90 }));
+    const n = (pl) => pl.routines[0].groups.reduce((t, g) => t + g.count, 0);
+    const over = long.routines.map((r) => estimateMinutes(r, long.phase.id, false)).filter((m) => m > 100);
+    return (n(short) < n(long) && !over.length) || `30 min: ${n(short)}, 90 min: ${n(long)}, over: ${over}`;
+  }],
+  ['Goal: realistic targets, and ambitious ones are flagged', () => {
+    return (recommendedPct('new', 13) === 20 && isAmbitious(30, 'experienced', 4) && !isAmbitious(5, 'some', 4)) || 'recommendations are off';
+  }],
+  ['Saving a plan sets routines, schedule, phase and goal', () => {
+    fresh();
+    const p = profile({ days: [1, 3, 5], weeks: 4, liftId: 'bench', pct: 5 });
+    const plan = buildPlan(p);
+    applyPlan(p, plan);
+    const g = goalProgress();
+    const ok = S.routines.length === 3 && S.weeklyGoal === 3 && S.plan.order.length === 3 && g.target === 12 && S.goal.statement.includes('Monday') && S.phase.id === 'hypertrophy' && S.onboarding === 'done';
+    return ok || `routines ${S.routines.length}, target ${g?.target}, statement ${S.goal?.statement}`;
+  }],
+  ['Next up follows the plan order', () => {
+    fresh();
+    const p = profile({ days: [1, 3, 5] });
+    applyPlan(p, buildPlan(p));
+    const first = nextRoutine();
+    S.workouts.push({ id: 'w', name: first.name, routineId: first.id, startedAt: Date.now(), endedAt: Date.now(), entries: [] });
+    return (first.id === S.plan.order[0] && nextRoutine().id === S.plan.order[1]) || 'next up is out of order';
   }],
   ['Pounds convert without rounding errors', () => {
     fresh('lb');
