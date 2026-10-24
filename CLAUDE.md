@@ -68,6 +68,10 @@ Read only the files a task needs.
 
 ## Checking work
 
-- Run: `python3 -m http.server 8000` and open `http://localhost:8000` at a phone-sized viewport (390×844).
-- Syntax check: `for f in js/*.js js/views/*.js sw.js; do node --check "$f"; done`
+- Test lab: `python3 -m http.server 8000`, then open `http://localhost:8000/test/` (the owner double-clicks `Start Micro Fitness.command`). It shows the app in a phone frame, loads sample data, jumps the phase clock, and runs built-in checks.
+- **Add a check to `CHECKS` in `test/lab.js` for every new rule.** Run them before pushing; all must pass.
+- On localhost the app skips the service worker so edits show on reload. Offline mode can only be tested on the live site.
+- `test/` is not part of the app: don't add it to `SHELL` in `sw.js`. The lab refuses to run anywhere but localhost or a local network address, so it can't touch live data.
+- Syntax check: `for f in js/*.js js/views/*.js sw.js test/lab.js; do node --check "$f"; done`
 - Keep commits small, one change each, with a plain-English message.
+- The owner keeps a test copy at `~/Downloads/Micro_Fitness` on his Mac. When the computer is linked, update it after pushing (keep `Start Micro Fitness.command` executable).

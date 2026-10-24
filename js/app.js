@@ -254,6 +254,11 @@ persist();
 
 render();
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+// Offline support is for the live site. When testing on your own computer,
+// skip it (and remove any old copy) so every reload shows the latest code.
+const isLocalTest = ['localhost', '127.0.0.1'].includes(location.hostname);
+if (isLocalTest && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+} else if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Offline support unavailable', err));
 }

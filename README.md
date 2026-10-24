@@ -22,15 +22,20 @@ It's a progressive web app (PWA): it runs in the browser, installs to your home 
 
 Everything is stored on the device, in the browser's local storage. Nothing is sent to a server. Use **Settings → Export backup** now and then, especially before switching phones or clearing browser data.
 
-## Run it locally
+## Test it on your Mac
 
-No build step and no dependencies. From this folder:
+Double-click **Start Micro Fitness** in this folder. A Terminal window opens (leave it open) and the **test lab** opens in your browser:
 
-```sh
-python3 -m http.server 8000
-```
+- The app in a phone-sized frame, with a choice of phone sizes.
+- **Start fresh** or **load 8 weeks of sample workouts**, so History and Progress have something to show.
+- **Save and restore snapshots** to repeat a test from the same point.
+- **Phase clock** to jump to any week, including the end of a 13-week phase.
+- **Run checks** to test the app's rules (tiny steps, rep cap, misses, phases, rest, rotation, data upgrades) in one click.
+- A link to **try it on your phone** over the same Wi-Fi.
 
-Then open http://localhost:8000. (Opening `index.html` directly as a file won't work, because the app uses JavaScript modules.)
+Test data stays on your Mac and never touches the app on your phone. Close the Terminal window to stop.
+
+If your Mac says the file can't be opened, right-click it and choose **Open**. It uses Python if you have it, or otherwise a small server that comes with this folder (`test/serve.pl`), so nothing needs installing.
 
 ## Put it on your phone
 
@@ -68,6 +73,8 @@ js/ui.js              Toasts and the sheet system
 js/dom.js             DOM helpers and icons
 js/data.js            Built-in exercise library and starter routines
 sw.js                 Offline caching (service worker)
+Start Micro Fitness.command  Double-click on a Mac to open the test lab
+test/                 Test lab: phone preview, test data, phase clock, checks
 manifest.webmanifest  Install settings: name, icons, colours
 icons/                App icons
 ```
