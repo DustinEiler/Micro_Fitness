@@ -787,3 +787,11 @@ body.intro-open { overflow: hidden; }
 .tips { display: grid; gap: 8px; padding-left: 20px; list-style: disc; }
 .tips li { font-size: 15px; }
 .in-body > .io { margin-bottom: 8px; }
+
+/* Selected chips: filled, with a tick, so they're obvious at a glance */
+.io-chip { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.io-tick { display: none; font-weight: 700; }
+.io-chip[aria-checked="true"] .io-tick { display: inline; }
+.io-chip[aria-checked="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--primary); }
+.io-days .io-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.io-days .io-chip { min-height: 56px; padding: 0 6px; border-radius: 14px; font-size: 18px; }

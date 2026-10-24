@@ -38,7 +38,11 @@ const options = (key, map, multi = false, helpOf = null) =>
 
 const chipRow = (key, entries) =>
   `<div class="io-chips" role="group">${entries
-    .map(([v, label]) => `<button class="io-chip" role="checkbox" aria-checked="${(st.p[key] || []).includes(v)}" data-pick="${key}" data-val="${v}" data-multi="1">${label}</button>`)
+    .map(([v, label]) => {
+      // Compare as text: days are saved as numbers, chip values are strings.
+      const on = (st.p[key] || []).map(String).includes(String(v));
+      return `<button class="io-chip" role="checkbox" aria-checked="${on}" data-pick="${key}" data-val="${v}" data-multi="1"><span class="io-tick" aria-hidden="true">✓</span>${label}</button>`;
+    })
     .join('')}</div>`;
 
 /* ---------- Steps ---------- */
@@ -80,8 +84,8 @@ const STEPS = [
     help: 'Be honest about your week. Two or three days is plenty to start, and you need at least one rest day.',
     body: () => {
       const n = st.p.days.length;
-      return `${chipRow('days', WEEK_ORDER.map((d) => [String(d), DAY_SHORT[d]]))}
-        <p class="in-note">${n ? `${n} day${n === 1 ? '' : 's'} a week.` : 'Tap the days you can train.'}${n === 1 ? ' Two days a week works every muscle often enough to build strength.' : ''}</p>`;
+      return `<div class="io-days">${chipRow('days', WEEK_ORDER.map((d) => [String(d), DAY_SHORT[d]]))}</div>
+        <p class="in-note">${n ? `${n} day${n === 1 ? '' : 's'} a week: ${WEEK_ORDER.filter((d) => st.p.days.includes(d)).map((d) => DAY_SHORT[d]).join(', ')}.` : 'Tap the days you can train.'}${n === 1 ? ' Two days a week works every muscle often enough to build strength.' : ''}</p>`;
     },
     valid: (p) => (p.days.length ? true : 'Pick at least one day.'),
   },
