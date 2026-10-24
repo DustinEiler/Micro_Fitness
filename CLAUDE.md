@@ -3,7 +3,7 @@
 Workout app built on Atomic Habits: every routine exercise has a target (sets × reps @ weight, rest), and each workout moves it **one tiny step** further (+1 rep, +1 weight step, or −5s rest). Plain HTML/CSS/JS progressive web app, hosted on GitHub Pages, used on a phone. The owner is not a developer: keep explanations short and plain.
 
 Future ideas (quests, avatar, friends, timed exercises) are in `ROADMAP.md`. Read it before starting any of them.
-The owner is working through `REVIEW.md`, a checklist of training rules, one item at a time. Tick items and write the decision in as they're settled.
+The owner is working through `REVIEW.md`, a checklist of training rules, one item at a time. Tick items and write the decision in as they're settled. `GUIDELINES.md` holds what the owner's chosen sites (NASM, ACE, Healthline, Nerd Fitness; ExRx is blocked) recommend and where they conflict. Follow it; ask the owner about any unresolved conflict.
 
 ## Hard rules
 

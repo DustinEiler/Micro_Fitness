@@ -1,6 +1,6 @@
 # Fitness review checklist
 
-Going through the training rules one at a time before adding new features. For each item: what the app does now, and the question to settle. Decisions get written in as we go.
+Going through the training rules one at a time before adding new features. For each item: what the app does now, and the question to settle. Decisions get written in as we go. What the recommended fitness sites say, and where they disagree, is in `GUIDELINES.md`.
 
 ## Phases
 
