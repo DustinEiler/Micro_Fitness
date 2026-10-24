@@ -35,26 +35,55 @@ if (!isLocal) {
 
 /* ---------- The phone frame ---------- */
 
+// Sizes in CSS pixels (what the browser sees), from each phone's screen
+// divided by its pixel density.
 const DEVICES = {
-  se: { name: 'iPhone SE', w: 375, h: 667 },
-  iphone: { name: 'iPhone 16', w: 393, h: 852 },
-  max: { name: 'iPhone 16 Pro Max', w: 440, h: 956 },
-  pixel: { name: 'Pixel 9', w: 412, h: 915 },
+  s22u: [384, 824], s24u: [384, 824], s23: [360, 780], s20u: [412, 915], a51: [412, 914], fold: [344, 882],
+  pixel7: [412, 915],
+  se: [375, 667], i13: [390, 844], i16: [393, 852], i14max: [430, 932], i16max: [440, 956],
 };
 
 const frame = $('#app');
 const shell = $('#phone');
 const APP_URL = '../index.html';
+const PREFS_KEY = 'micro-fitness.lab-screen';
+let rotated = false;
+
+// Remember the chosen size between visits.
+try {
+  const p = JSON.parse(localStorage.getItem(PREFS_KEY));
+  if (p?.device && (DEVICES[p.device] || p.device === 'custom')) $('#device').value = p.device;
+  if (p?.w) $('#custom-w').value = p.w;
+  if (p?.h) $('#custom-h').value = p.h;
+  rotated = !!p?.rotated;
+} catch { /* first visit */ }
 
 function sizeFrame() {
-  const d = DEVICES[$('#device').value] || DEVICES.iphone;
-  shell.style.setProperty('--w', `${d.w}px`);
-  shell.style.setProperty('--h', `${d.h}px`);
-  const room = window.innerHeight - 48;
-  const scale = Math.min(1, room / (d.h + 28));
+  const key = $('#device').value;
+  const custom = key === 'custom';
+  $('#custom-w-f').hidden = $('#custom-h-f').hidden = !custom;
+  let [w, h] = custom
+    ? [Math.min(1200, Math.max(280, Number($('#custom-w').value) || 384)), Math.min(1400, Math.max(400, Number($('#custom-h').value) || 824))]
+    : DEVICES[key] || DEVICES.s22u;
+  if (rotated) [w, h] = [h, w];
+  $('#btn-rotate').setAttribute('aria-pressed', String(rotated));
+  shell.style.setProperty('--w', `${w}px`);
+  shell.style.setProperty('--h', `${h}px`);
+  const roomH = window.innerHeight - 48;
+  const roomW = window.innerWidth > 900 ? window.innerWidth - 420 : window.innerWidth - 32;
+  const scale = Math.min(1, roomH / (h + 28), roomW / (w + 28));
   shell.style.setProperty('--scale', scale.toFixed(3));
-  $('#scale-note').textContent = scale < 1 ? `Shown at ${Math.round(scale * 100)}% to fit your screen.` : '';
+  $('#scale-note').textContent = `${w} × ${h}${rotated ? ', sideways' : ''}${scale < 1 ? `, shown at ${Math.round(scale * 100)}% to fit your screen` : ''}.`;
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ device: key, w: $('#custom-w').value, h: $('#custom-h').value, rotated }));
+  } catch { /* not saved */ }
 }
+$('#custom-w').addEventListener('input', sizeFrame);
+$('#custom-h').addEventListener('input', sizeFrame);
+$('#btn-rotate').addEventListener('click', () => {
+  rotated = !rotated;
+  sizeFrame();
+});
 $('#device').addEventListener('change', sizeFrame);
 window.addEventListener('resize', sizeFrame);
 sizeFrame();

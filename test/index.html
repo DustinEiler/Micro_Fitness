@@ -31,12 +31,30 @@
         <div class="row">
           <label class="field"><span>Phone size</span>
             <select id="device">
-              <option value="se">iPhone SE (small)</option>
-              <option value="iphone" selected>iPhone 16</option>
-              <option value="max">iPhone 16 Pro Max (large)</option>
-              <option value="pixel">Pixel 9</option>
+              <optgroup label="Samsung">
+                <option value="s22u" selected>Galaxy S22 Ultra (384 × 824)</option>
+                <option value="s24u">Galaxy S23 / S24 Ultra (384 × 824)</option>
+                <option value="s23">Galaxy S23 / S24 (360 × 780)</option>
+                <option value="s20u">Galaxy S20 Ultra (412 × 915)</option>
+                <option value="a51">Galaxy A51 / A71 (412 × 914)</option>
+                <option value="fold">Galaxy Z Fold, folded (344 × 882)</option>
+              </optgroup>
+              <optgroup label="Google">
+                <option value="pixel7">Pixel 7 / 8 / 9 (412 × 915)</option>
+              </optgroup>
+              <optgroup label="Apple">
+                <option value="se">iPhone SE (375 × 667)</option>
+                <option value="i13">iPhone 12 / 13 / 14 (390 × 844)</option>
+                <option value="i16">iPhone 15 / 16 (393 × 852)</option>
+                <option value="i14max">iPhone 14 Pro Max (430 × 932)</option>
+                <option value="i16max">iPhone 16 Pro Max (440 × 956)</option>
+              </optgroup>
+              <option value="custom">Custom size</option>
             </select>
           </label>
+          <label class="field" id="custom-w-f" hidden><span>Width</span><input id="custom-w" type="number" min="280" max="1200" value="384" inputmode="numeric"></label>
+          <label class="field" id="custom-h-f" hidden><span>Height</span><input id="custom-h" type="number" min="400" max="1400" value="824" inputmode="numeric"></label>
+          <button class="btn" id="btn-rotate" aria-pressed="false">Rotate</button>
           <button class="btn" id="btn-reload">Reload app</button>
         </div>
         <p class="fine">For dark mode, switch your Mac to dark (System Settings, Appearance). <a href="../index.html" target="_blank" rel="noopener">Open the app in its own tab</a>.</p>

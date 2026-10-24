@@ -54,8 +54,8 @@ p { margin: 0; }
 
 .stage { position: sticky; top: 24px; display: grid; justify-items: center; gap: 8px; }
 .phone {
-  --w: 393px;
-  --h: 852px;
+  --w: 384px;
+  --h: 824px;
   --scale: 1;
   width: calc((var(--w) + 28px) * var(--scale));
   height: calc((var(--h) + 28px) * var(--scale));
@@ -80,7 +80,8 @@ p { margin: 0; }
 .fine { color: var(--muted); font-size: 14px; }
 
 .field { display: grid; gap: 4px; font-size: 14px; font-weight: 600; color: var(--muted); }
-.field select {
+.field input { width: 96px; }
+.field select, .field input {
   min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line);
@@ -126,3 +127,5 @@ p { margin: 0; }
   .lab { grid-template-columns: 1fr; gap: 24px; padding: 16px; }
   .stage { position: static; }
 }
+
+[hidden] { display: none !important; }
