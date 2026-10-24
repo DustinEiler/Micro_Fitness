@@ -33,7 +33,7 @@ Read only the files a task needs.
 | Routine editor, new exercise, exercise on/off list | `js/editor.js` |
 | Which exercises come up each workout (rotation) | `js/rotation.js` |
 | Pop-ups: mid-workout picker, phases, settings, backup | `js/sheets.js` |
-| Rest timer | `js/timer.js` |
+| Rest timer (colour states, start/stop) | `js/timer.js` |
 | History lookups (last sets, bests, streak) | `js/queries.js` |
 | Units, dates, number formats | `js/format.js` |
 | Exercise library: 406 exercises, equipment, flags | `js/library.js` |
@@ -82,6 +82,12 @@ Read only the files a task needs.
 - Conditioning (10–40s, HIIT/Tabata) is intentionally not a phase: it's timed work, a possible separate feature.
 - Changing phase calls `fitItem` on every routine item: clamps into the new ranges and, if reps change, recalculates weight from estimated 1RM (rounded down to the weight step).
 - New/imported/upgraded data sets `phaseFitPending`; `ensureFitted()` runs it once.
+
+## Rest timer (js/timer.js)
+
+- `S.timer = { startedAt, endsAt, total, stoppedAt? }`. Counts down, then counts up past zero; it doesn't disappear on its own (cleared after 30 min). `timerState()` gives the colour: yellow in the last `WARN_SEC` (10s), green at zero (beep), red over `LATE_SEC` (5s).
+- Owner doesn't stop his timer when he starts lifting, so ticking off a set always restarts it; Stop is optional and shows the actual rest. During a workout the bar always shows (idle: Start with `S.lastRest`).
+- The unit label above the weight column (`toggle-units`) switches kg/lb; same as Settings.
 
 ## Patterns
 

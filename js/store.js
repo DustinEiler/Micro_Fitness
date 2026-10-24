@@ -15,6 +15,7 @@ export function freshState() {
     units: 'kg',
     weeklyGoal: 3,
     rest: 90,
+    lastRest: null, // last rest timer length, for the Start button
     experience: 'experienced',
     exercises: DEFAULT_EXERCISES.map((e) => ({ ...e, equip: [...e.equip] })),
     routines: DEFAULT_ROUTINES.map((r) => ({

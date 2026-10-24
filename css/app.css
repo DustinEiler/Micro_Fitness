@@ -367,7 +367,27 @@ body.has-timer main { padding-bottom: calc(var(--tabs-h) + var(--timer-h) + var(
   font: 600 18px/1 var(--font-num);
   touch-action: manipulation;
 }
-.timer-skip { background: var(--bg); color: var(--ink); border-color: var(--bg); }
+.timer-main { min-width: 76px; background: var(--bg); color: var(--ink); border-color: var(--bg); }
+/* Colour states: yellow near the end, green at zero, red when over by 5s+ */
+.timer { transition: background-color 0.3s; }
+.timer[data-state="warn"] { background: var(--plate-yellow); color: #1C2321; }
+.timer[data-state="go"] { background: var(--plate-green); color: #FFFFFF; }
+.timer[data-state="late"] { background: var(--plate-red); color: #FFFFFF; }
+.timer[data-state="warn"] .ring-fill,
+.timer[data-state="go"] .ring-fill,
+.timer[data-state="late"] .ring-fill { stroke: currentColor; }
+.timer[data-state="warn"] .ring-track,
+.timer[data-state="go"] .ring-track,
+.timer[data-state="late"] .ring-track { stroke: color-mix(in srgb, currentColor 25%, transparent); }
+.timer[data-state="warn"] .timer-btn,
+.timer[data-state="go"] .timer-btn,
+.timer[data-state="late"] .timer-btn { border-color: color-mix(in srgb, currentColor 45%, transparent); }
+.timer[data-state="warn"] .timer-main,
+.timer[data-state="go"] .timer-main,
+.timer[data-state="late"] .timer-main { background: #1C2321; color: #FFFFFF; border-color: #1C2321; }
+.timer[data-state="idle"] .timer-time,
+.timer[data-state="stopped"] .timer-time { opacity: 0.85; }
+.unit-btn { all: unset; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 
 /* ---------- History ---------- */
 

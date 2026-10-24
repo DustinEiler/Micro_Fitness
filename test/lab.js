@@ -12,6 +12,7 @@ import { freshState, parseBackup, STORAGE_KEY, uid } from '../js/store.js';
 import { toDisp, fromDisp } from '../js/format.js';
 import { newItem, suggest, applyResult } from '../js/progression.js';
 import { PHASES, ensureFitted, fitItem, restRange, PHASE_WEEKS } from '../js/phases.js';
+import { timerState } from '../js/timer.js';
 import { itemsForToday } from '../js/rotation.js';
 import { defaultProfile, buildPlan, PLACES, estimateMinutes, recommendedPct, isAmbitious, INJURY_RISK } from '../js/planner.js';
 import { applyPlan, nextRoutine, goalProgress } from '../js/goal.js';
@@ -534,6 +535,24 @@ const CHECKS = [
     logged(2, 'squat', [[80, 6]]);
     const L = allLevels();
     return L.overall.xp === XP.show * 2 || `overall ${L.overall.xp}`;
+  }],
+  ['Rest timer: yellow near the end, green at zero, red 5s over', () => {
+    const t = { startedAt: 0, endsAt: 90e3, total: 90 };
+    const at = (sec) => timerState(t, sec * 1000).state;
+    const got = [at(30), at(81), at(90), at(95), at(96)].join(' ');
+    return got === 'run warn go go late' || `got ${got}`;
+  }],
+  ['Rest timer: stopping shows how long you rested', () => {
+    const st = timerState({ startedAt: 0, endsAt: 90e3, total: 90, stoppedAt: 102e3 }, 500e3);
+    return (st.stopped && st.rested === 102 && st.state === 'late') || `rested ${st.rested}s`;
+  }],
+  ['Switching kg and lb keeps the same weight', () => {
+    fresh('lb');
+    const kg = fromDisp(135);
+    S.units = 'kg';
+    const shown = toDisp(kg);
+    S.units = 'lb';
+    return (shown === 61.2 && toDisp(kg) === 135) || `135 lb showed as ${shown} kg`;
   }],
   ['Pounds convert without rounding errors', () => {
     fresh('lb');

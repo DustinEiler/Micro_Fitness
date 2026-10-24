@@ -11,7 +11,7 @@ import { initIntro, openIntro } from './intro.js';
 import { openLevelDetail } from './views/levels.js';
 import { closeSheet, confirmSheet, sheetState, toast } from './ui.js';
 import { render, go } from './router.js';
-import { startTimer, adjustTimer, skipTimer, updateTimer, primeAudio } from './timer.js';
+import { startTimer, adjustTimer, skipTimer, stopTimer, restartTimer, updateTimer, primeAudio } from './timer.js';
 import { newEntry, startWorkout, finishWorkout, discardWorkout, chooseStep, restFor } from './workout.js';
 import { openPicker, renderPickList, pick, createAndPick, exMenu, openSettings, exportBackup, importBackup, openPhases } from './sheets.js';
 import {
@@ -92,6 +92,18 @@ const actions = {
   // Rest timer
   'timer-add': (b, { id }) => adjustTimer(Number(id)),
   'timer-skip': () => skipTimer(),
+  'timer-stop': () => stopTimer(),
+  // Weights are stored in kg, so switching just changes what's shown.
+  'toggle-units': () => {
+    S.units = S.units === 'kg' ? 'lb' : 'kg';
+    persist();
+    render();
+    toast(`Showing weights in ${S.units === 'kg' ? 'kilograms' : 'pounds'}.`);
+  },
+  'timer-start': () => {
+    primeAudio();
+    restartTimer();
+  },
 
   // Exercise picker
   pick: (b, { id }) => pick(id),

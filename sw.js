@@ -2,7 +2,7 @@
 // served from the cache and refreshed in the background, so updates show up
 // on the next launch. Bump CACHE when you want to force a clean cache.
 
-const CACHE = 'micro-fitness-v9';
+const CACHE = 'micro-fitness-v10';
 const SHELL = [
   './',
   'index.html',
