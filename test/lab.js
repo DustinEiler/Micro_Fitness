@@ -15,6 +15,7 @@ import { PHASES, ensureFitted, fitItem, restRange, PHASE_WEEKS } from '../js/pha
 import { itemsForToday } from '../js/rotation.js';
 import { defaultProfile, buildPlan, PLACES, estimateMinutes, recommendedPct, isAmbitious, INJURY_RISK } from '../js/planner.js';
 import { applyPlan, nextRoutine, goalProgress } from '../js/goal.js';
+import { exerciseStats, levelFor, workoutGains, allLevels, XP } from '../js/levels.js';
 import { DEFAULT_EXERCISES, DEFAULT_ROUTINES, EQUIPMENT, GROUPS } from '../js/data.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -196,7 +197,9 @@ function sampleHistory(weeks = 8) {
         const out = applyResult(item, plan, sets);
         if (out?.kind === 'hit') S.stepsTaken++;
         item.lastDone = t;
-        entries.push({ exerciseId: item.exerciseId, sets: sets.map(({ w, r }) => ({ w, r })) });
+        const entry = { exerciseId: item.exerciseId, sets: sets.map(({ w, r }) => ({ w, r })) };
+        if (out) entry.step = { kind: out.kind, lever: out.lever || null };
+        entries.push(entry);
       }
       S.workouts.push({ id: uid(), name: r.name, routineId: r.id, phase: S.phase.id, startedAt: t, endedAt: t + (45 + Math.round(rand() * 20)) * 60e3, entries });
     }
@@ -286,6 +289,14 @@ const profile = (o = {}) => ({
 });
 const groupsOf = (plan) => new Set(plan.routines.flatMap((r) => r.groups.map((g) => g.group)));
 const exOf = (id) => S.exercises.find((e) => e.id === id);
+
+// A logged workout for XP checks. sets: [[kg, reps], ...]
+let wid = 0;
+const logged = (t, exerciseId, sets, step) => {
+  const w = { id: `w${wid++}`, name: 'Test', routineId: null, startedAt: t, endedAt: t + 1, entries: [{ exerciseId, sets: sets.map(([w, r]) => ({ w, r })), ...(step ? { step } : {}) }] };
+  S.workouts.push(w);
+  return w;
+};
 
 const CHECKS = [
   ['Starter routines fit the hypertrophy ranges', () => {
@@ -468,6 +479,55 @@ const CHECKS = [
     const first = nextRoutine();
     S.workouts.push({ id: 'w', name: first.name, routineId: first.id, startedAt: Date.now(), endedAt: Date.now(), entries: [] });
     return (first.id === S.plan.order[0] && nextRoutine().id === S.plan.order[1]) || 'next up is out of order';
+  }],
+  ['XP: showing up, tiny steps and new bests', () => {
+    fresh();
+    logged(1, 'bench', [[60, 8], [60, 8]], { kind: 'calibrated', lever: null });
+    logged(2, 'bench', [[60, 9], [60, 9]], { kind: 'hit', lever: 'reps' });
+    logged(3, 'bench', [[62.5, 9], [62.5, 9]], { kind: 'hit', lever: 'weight' });
+    const st = exerciseStats().get('bench');
+    const want = XP.show + (XP.show + XP.reps + XP.best) + (XP.show + XP.weight + XP.best);
+    return (st.xp === want && st.level === 2) || `xp ${st.xp} (wanted ${want}), level ${st.level}`;
+  }],
+  ['XP: a missed step still earns XP for showing up', () => {
+    fresh();
+    logged(1, 'squat', [[80, 6]], { kind: 'calibrated', lever: null });
+    logged(2, 'squat', [[80, 5]], { kind: 'missed', lever: null });
+    const st = exerciseStats().get('squat');
+    return st.xp === XP.show * 2 || `xp ${st.xp}`;
+  }],
+  ['XP: older workouts count when they beat last time', () => {
+    fresh();
+    logged(1, 'row', [[50, 8]]);
+    logged(2, 'row', [[50, 10]]);
+    const st = exerciseStats().get('row');
+    return st.xp === XP.show * 2 + XP.improve + XP.best || `xp ${st.xp}`;
+  }],
+  ['XP: bodyweight moves level up on reps', () => {
+    fresh();
+    logged(1, 'pull-up', [[null, 5]]);
+    logged(2, 'pull-up', [[null, 7]], { kind: 'hit', lever: 'reps' });
+    const st = exerciseStats().get('pull-up');
+    return (st.bodyweight && st.best === 7 && st.xp === XP.show * 2 + XP.reps + XP.best) || `best ${st.best}, xp ${st.xp}`;
+  }],
+  ['Levels take a little more XP each time', () => {
+    const a = levelFor(49).level, b = levelFor(50).level, c = levelFor(124).level, d = levelFor(125).level;
+    return (a === 1 && b === 2 && c === 2 && d === 3 && levelFor(200, 'overall').level === 2) || `got ${a} ${b} ${c} ${d}`;
+  }],
+  ['Level-ups show in the workout summary', () => {
+    fresh();
+    logged(1, 'bench', [[60, 8]], { kind: 'calibrated', lever: null });
+    logged(2, 'bench', [[60, 9]], { kind: 'hit', lever: 'reps' });
+    const w = logged(3, 'bench', [[62.5, 9]], { kind: 'hit', lever: 'weight' });
+    const g = workoutGains(w);
+    return (g.xp === XP.show + XP.weight + XP.best && g.ups.some((u) => u.name === 'Bench press' && u.level === 2)) || `xp ${g.xp}, ups ${JSON.stringify(g.ups)}`;
+  }],
+  ['Overall level adds up every exercise', () => {
+    fresh();
+    logged(1, 'bench', [[60, 8]]);
+    logged(2, 'squat', [[80, 6]]);
+    const L = allLevels();
+    return L.overall.xp === XP.show * 2 || `overall ${L.overall.xp}`;
   }],
   ['Pounds convert without rounding errors', () => {
     fresh('lb');

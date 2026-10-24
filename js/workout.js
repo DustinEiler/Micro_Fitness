@@ -11,6 +11,7 @@ import { unit, toDisp, setScore, setStr, fmtDur, fmtNum, plural } from './format
 import { exById, lastSetsFor, bestScore, workoutVolume, workoutSets } from './queries.js';
 import { suggest, applyResult, describe } from './progression.js';
 import { phaseId } from './phases.js';
+import { workoutGains } from './levels.js';
 import { itemsForToday } from './rotation.js';
 import { openSheet, confirmSheet, toast } from './ui.js';
 import { render, go } from './router.js';
@@ -118,6 +119,9 @@ export function finishWorkout() {
       item.lastDone = Date.now(); // moves it to the back of the rotation
       if (out.kind === 'hit') S.stepsTaken = (S.stepsTaken || 0) + 1;
       outcomes.push({ ...out, name: exById(e.exerciseId).name });
+      // Saved with the workout so the Levels tab can award XP for the step.
+      const saved = entries.find((x) => x.exerciseId === e.exerciseId);
+      if (saved) saved.step = { kind: out.kind, lever: out.lever || null };
     }
 
     const w = { id: a.id, name: a.name.trim() || 'Workout', routineId: a.routineId, phase: phaseId(), startedAt: a.startedAt, endedAt: Date.now(), entries };
@@ -127,7 +131,7 @@ export function finishWorkout() {
     S.timer = null;
     persist();
     render();
-    summarySheet(w, prs, outcomes);
+    summarySheet(w, prs, outcomes, workoutGains(w));
   };
   if (unchecked) confirmSheet(`${unchecked} set${unchecked === 1 ? ' isn’t' : 's aren’t'} checked off and won’t be saved.`, 'Finish workout', save);
   else save();
@@ -146,11 +150,26 @@ function outcomeLine(o) {
   return `<li><span class="out-badge out-start">Start</span><span><strong>${esc(o.name)}</strong> Starting point set: ${describe(o.target)}.</span></li>`;
 }
 
-function summarySheet(w, prs, outcomes) {
+// XP earned, and a badge for each level-up. The one moment of celebration.
+function gainsBlock(g) {
+  if (!g?.xp) return '';
+  const ups = g.ups
+    .map((u) => `<li class="lvl-up"><span class="lvl-badge" aria-hidden="true">${u.level}</span><span><strong>${esc(u.name)}</strong> reached level ${u.level}${u.group ? ' (muscle group)' : ''}</span></li>`)
+    .join('');
+  return `<div class="gains${g.ups.length || g.overallUp ? ' has-ups' : ''}">
+    <p class="gains-xp"><span class="gains-n">+${g.xp} XP</span>${g.overallUp ? ` <span class="gains-big">Level ${g.overall.level}: ${esc(g.overall.title)}</span>` : ''}</p>
+    <div class="xp-bar" role="progressbar" aria-label="Overall level ${g.overall.level}" aria-valuemin="0" aria-valuemax="${g.overall.span}" aria-valuenow="${g.overall.into}"><span style="width:${Math.round(g.overall.pct * 100)}%"></span></div>
+    <p class="fine">Overall level ${g.overall.level}. ${g.overall.toNext} XP to level ${g.overall.level + 1}.</p>
+    ${ups ? `<ul class="lvl-ups">${ups}</ul>` : ''}
+  </div>`;
+}
+
+function summarySheet(w, prs, outcomes, gains) {
   const vol = workoutVolume(w);
   const hits = outcomes.filter((o) => o.kind === 'hit').length;
   openSheet(`
     <h2 class="sheet-h">Workout saved</h2>
+    ${gainsBlock(gains)}
     ${hits ? `<p class="lede">${plural(hits, 'tiny step')} forward today. That’s ${plural(S.stepsTaken, 'step')} in total.</p>` : ''}
     <dl class="totals">
       <div><dt>Time</dt><dd>${fmtDur(w.endedAt - w.startedAt)}</dd></div>

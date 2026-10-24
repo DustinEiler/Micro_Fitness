@@ -13,6 +13,7 @@ It's a progressive web app (PWA): it runs in the browser, installs to your home 
 - **Smarter rest:** big compound lifts (squats, presses, deadlifts) rest at the longer end of the phase's range, isolation exercises (curls, raises, calf raises) at the shorter end. Beginner mode keeps every rest at 60 seconds or more so form holds up.
 - **Log sets:** weight and reps for each set, pre-filled from last time, with your previous numbers shown under each exercise.
 - **Rest timer:** starts automatically when you tick off a set, with a beep and vibration when it's done.
+- **Levels:** every exercise has its own level and XP bar, like a game. You earn XP for showing up (+5), each tiny step (+10 for a rep or shorter rest, +15 for more weight) and new bests (+25). Muscle groups and your overall level add it all up. Each exercise also shows its estimated one-rep max and how much stronger you've got. Level-ups appear in the workout summary.
 - **History:** every finished workout, grouped by month.
 - **Progress:** a 12-week consistency view, weekly-goal streak, and a chart per exercise (estimated one-rep max, or max reps for bodyweight moves).
 - **Routines built from muscle groups:** a day like Chest × 2, Triceps × 1, Shoulders × 1. Tick which exercises can come up for each group; every workout uses the ones you've done least recently, so you rotate through them. Pin an exercise to keep it in every workout. Each exercise keeps its own target and tiny-step progress. Push, Pull and Legs are included to start.
@@ -59,7 +60,8 @@ index.html            App shell and tab bar
 css/app.css           All styles, light and dark mode
 js/app.js             Entry point: button actions and event wiring
 js/router.js          Tabs (#train, #history, …) and screen rendering
-js/views/             One file per screen: train, session, history, progress, routines
+js/views/             One file per screen: train, session, history, progress, levels, routines
+js/levels.js          XP and level rules
 js/workout.js         Start, finish and discard workouts
 js/intro.js           First-run questions, goal and plan preview
 js/planner.js         Builds the plan from your answers

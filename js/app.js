@@ -8,6 +8,7 @@ import { $, $$last } from './dom.js';
 import { fromDisp } from './format.js';
 import { ensureFitted, startPhase, fitAllRest, PHASES } from './phases.js';
 import { initIntro, openIntro } from './intro.js';
+import { openLevelDetail } from './views/levels.js';
 import { closeSheet, confirmSheet, sheetState, toast } from './ui.js';
 import { render, go } from './router.js';
 import { startTimer, adjustTimer, skipTimer, updateTimer, primeAudio } from './timer.js';
@@ -119,6 +120,9 @@ const actions = {
   'routine-save': () => saveRoutine(),
   'routine-delete': () => deleteRoutine(),
 
+  // Levels
+  'level-ex': (b, { id }) => openLevelDetail(id),
+
   // Intro and goals
   setup: () => {
     closeSheet({ cancelled: false });
@@ -203,7 +207,11 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('change', (e) => {
   const t = e.target;
-  if (t.id === 'prog-ex') {
+  if (t.id === 'level-sort') {
+    S.levelSort = t.value;
+    persist();
+    render();
+  } else if (t.id === 'prog-ex') {
     S.progressEx = t.value;
     persist();
     render();

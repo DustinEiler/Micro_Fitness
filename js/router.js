@@ -9,8 +9,9 @@ import { viewSession } from './views/session.js';
 import { viewHistory } from './views/history.js';
 import { viewProgress } from './views/progress.js';
 import { viewRoutines } from './views/routines.js';
+import { viewLevels } from './views/levels.js';
 
-const ROUTES = { train: 'Train', history: 'History', progress: 'Progress', routines: 'Routines' };
+const ROUTES = { train: 'Train', history: 'History', progress: 'Progress', levels: 'Levels', routines: 'Routines' };
 
 export const route = () => {
   const r = location.hash.slice(1);
@@ -25,7 +26,7 @@ export function render() {
     else a.removeAttribute('aria-current');
   });
   $('.tabs a[data-route="train"]').classList.toggle('is-live', !!S.active);
-  const views = { train: S.active ? viewSession : viewTrain, history: viewHistory, progress: viewProgress, routines: viewRoutines };
+  const views = { train: S.active ? viewSession : viewTrain, history: viewHistory, progress: viewProgress, levels: viewLevels, routines: viewRoutines };
   $('#view').innerHTML = views[r]();
   renderTimer();
 }

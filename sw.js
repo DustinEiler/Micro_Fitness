@@ -2,7 +2,7 @@
 // served from the cache and refreshed in the background, so updates show up
 // on the next launch. Bump CACHE when you want to force a clean cache.
 
-const CACHE = 'micro-fitness-v8';
+const CACHE = 'micro-fitness-v9';
 const SHELL = [
   './',
   'index.html',
@@ -26,6 +26,8 @@ const SHELL = [
   'js/planner.js',
   'js/goal.js',
   'js/intro.js',
+  'js/levels.js',
+  'js/views/levels.js',
   'js/editor.js',
   'js/views/train.js',
   'js/views/session.js',

@@ -19,7 +19,8 @@ Read only the files a task needs.
 | Task | File |
 |---|---|
 | Button does something | `js/app.js` (`actions` map, keyed by `data-action`) |
-| A screen's layout/content | `js/views/<train,session,history,progress,routines>.js` |
+| A screen's layout/content | `js/views/<train,session,history,progress,levels,routines>.js` |
+| XP and level rules | `js/levels.js` |
 | Tiny-step rules: options, rotation, rep cap, hit/miss | `js/progression.js` |
 | Training phases: ranges, 13-week clock, fitting targets | `js/phases.js` |
 | Start/finish workout, PBs, summary | `js/workout.js` |
@@ -44,6 +45,14 @@ Read only the files a task needs.
 - Goal: workouts target = days × weeks, plus one lift improved by a % (`recommendedPct` by experience and timeframe; >1.5× is flagged ambitious). Progress compares best e1RM (or reps for bodyweight) during the goal to the session before it started (or the first one after).
 - Research behind it: ACE SMART guide, Philly YMCA, SM Personal Training, Freeform Fitness (4–6 exercises, reassess every 4–8 weeks), CDC adult guidelines (150 min moderate activity, strength 2+ days, all major muscles). The SELF article and ExRx block automated reading.
 - Health answers are only used to set beginner mode and show a see-your-doctor note. Never give medical advice in copy.
+
+## Levels and XP (js/levels.js, js/views/levels.js)
+
+- Owner chose XP from tiny steps, with an overall level and per-muscle-group levels. Estimated 1RM is shown alongside as the strength number.
+- XP is worked out from workout history every time (never stored), so old workouts count. Per exercise per workout: +5 showing up, +10 rep or rest step, +15 weight step, +25 new best (setScore: e1RM, or reps for bodyweight). Workouts without `entry.step` (saved before steps were recorded) get +10 if they beat the previous session.
+- `finishWorkout` saves `entry.step = { kind, lever }` from `applyResult`. Keep doing this for any new way of finishing a workout.
+- Curves: exercise level n→n+1 needs 50 + 25(n−1) XP; muscle group 100 + 50(n−1); overall 200 + 100(n−1). Overall titles change every 5 levels.
+- The workout summary shows XP earned and level-ups (`workoutGains`).
 
 ## Routines and rotation (js/rotation.js)
 
