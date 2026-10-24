@@ -12,9 +12,9 @@ export const PHASE_ORDER = ['endurance', 'hypertrophy', 'strength', 'power'];
 export const PHASES = {
   endurance: {
     name: 'Endurance',
-    focus: 'Muscular endurance and conditioning. Lighter weight, more reps, short rest to keep the effort high.',
-    reps: [15, 20],
-    sets: null,
+    focus: 'Muscular endurance and conditioning. Lighter weight, more reps, short rest to keep the effort high. Stop each set with about 3 reps left in the tank. If you’re experienced, take the last set closer to failure.',
+    reps: [12, 20],
+    sets: [2, 3],
     rest: [30, 60],
   },
   hypertrophy: {

@@ -361,6 +361,12 @@ const CHECKS = [
     const ok = item.reps === 5 && item.w > 65 && item.w < 85 && near(item.w / 2.5, Math.round(item.w / 2.5));
     return ok || `became ${item.sets} × ${item.reps} @ ${item.w} kg`;
   }],
+  ['Endurance: 12–20 reps and 2–3 sets', () => {
+    fresh();
+    const item = kgItem('bench', 4, 8, 60, 90);
+    fitItem(item, PHASES.endurance);
+    return (item.reps >= 12 && item.reps <= 20 && item.sets === 3) || `became ${item.sets} × ${item.reps}`;
+  }],
   ['Each workout fills every muscle group', () => {
     fresh();
     const push = S.routines.find((r) => r.id === 'push');

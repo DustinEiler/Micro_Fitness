@@ -24,7 +24,7 @@ Sites: NASM, ACE, Healthline, Nerd Fitness, ExRx. **ExRx blocks automated readin
 
 ## Where they disagree
 
-### Endurance
+### Endurance (decided: 12–20 reps, 2–3 sets, 30–60s rest, about 3 reps in reserve)
 
 1. **Reps.** ACE and Nerd Fitness 12+; NASM 12–20; Healthline 13–20 in one article, 15+ in another. App: 15–20.
 2. **Rest.** ACE 30s or less; Nerd Fitness and Healthline 30–60s (Healthline's rest article says under 2 min, as little as 20s); NASM 0–90s. App: 30–60s.

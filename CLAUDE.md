@@ -70,14 +70,14 @@ Read only the files a task needs.
 - `ready: false`: the next session calibrates (logged sets become the baseline).
 - Suggested lever rotates reps → weight → rest after the last success. Miss once: retry the same step. Miss twice: rotate to a different lever.
 - Hit = at least `sets` checked-off sets with reps ≥ target and weight ≥ target. On hit, the target becomes the baseline and `S.stepsTaken` goes up.
-- Every target stays inside the current phase's ranges (`PHASES` in `js/phases.js`): reps, sets (hypertrophy only), rest. The rest step is only offered if it stays above the phase minimum.
+- Every target stays inside the current phase's ranges (`PHASES` in `js/phases.js`): reps, sets (endurance and hypertrophy), rest. The rest step is only offered if it stays above the phase minimum.
 - **Rep cap rule:** when reps are at the top of the phase range, the only step is weight, with reps lowered to the smallest count whose estimated 1RM (Epley) still beats the old one (e.g. 12 @ 135 → 11 @ 140 lb).
 - Weight step defaults to 2.5 kg / 5 lb (per-exercise override: `item.step`).
 - Workout entries from a routine carry `plan` (see top of `js/workout.js`); exercises added mid-workout don't.
 
 ## Phases (js/phases.js)
 
-- `S.phase = { id, startedAt, history }`. Phases: endurance 15–20 reps, 30–60s rest; hypertrophy 6–12 reps, 3–6 sets, 30–90s; strength 1–5 reps, 2–5 min; power 1–10 reps, 2–5 min. Each runs 13 weeks; then the Train screen prompts for the next (cycle order: endurance → hypertrophy → strength → power). All ranges come from the owner. Check with the owner before changing phase rules.
+- `S.phase = { id, startedAt, history }`. Phases: endurance 12–20 reps, 2–3 sets, 30–60s rest; hypertrophy 6–12 reps, 3–6 sets, 30–90s; strength 1–5 reps, 2–5 min; power 1–10 reps, 2–5 min. Each runs 13 weeks; then the Train screen prompts for the next (cycle order: endurance → hypertrophy → strength → power). All ranges come from the owner. Check with the owner before changing phase rules.
 - **Rest per exercise** (`restRange`): compound lifts use the longer half of the phase's rest range, isolation exercises the shorter half (split at the midpoint). Kind comes from `exKind` in `js/data.js` (`ISOLATION` set, or the exercise's own `kind`). `S.experience === 'beginner'` raises every rest minimum to 60s. Call `fitAllRest()` after changing either.
 - Conditioning (10–40s, HIIT/Tabata) is intentionally not a phase: it's timed work, a possible separate feature.
 - Changing phase calls `fitItem` on every routine item: clamps into the new ranges and, if reps change, recalculates weight from estimated 1RM (rounded down to the weight step).

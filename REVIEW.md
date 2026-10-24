@@ -5,6 +5,7 @@ Going through the training rules one at a time before adding new features. For e
 ## Phases
 
 - [ ] **1. Phase ranges.** Now: endurance 15–20 reps, 30–60s rest; hypertrophy 6–12 reps, 3–6 sets, 30–90s rest; strength 1–5 reps, 2–5 min rest; power 1–10 reps, 2–5 min rest. Only hypertrophy has a set range (other phases default to 3 sets). *Should every phase have a set range?*
+  - **Endurance, decided:** 12–20 reps (NASM; covers ACE and Nerd Fitness), 2–3 sets (most sites), 30–60s rest kept (Nerd Fitness and Healthline). Effort: stop with about 3 reps in reserve; experienced lifters can take the last set closer to failure (shown as a tip in the phase description). Hypertrophy, strength and power still to go.
 - [ ] **2. Phase length and order.** Now: 13 weeks each, cycle endurance → hypertrophy → strength → power. Beginners (or anyone with a health flag) wanting strength or power start with hypertrophy as a foundation. *Right order? Same length for every phase?*
 - [ ] **3. Deload weeks.** Now: none. Training straight through 13 weeks. *Add a lighter week (e.g. every 4–6 weeks, or at the end of each phase)?*
 - [ ] **4. Power phase progression.** Now: power progresses like the others (+1 rep). Power reps are meant to stay fast, so extra reps may work against it. *Progress power by weight only, or keep reps?*
@@ -26,7 +27,7 @@ Going through the training rules one at a time before adding new features. For e
 
 ## Strength numbers
 
-- [ ] **14. Estimated one-rep max.** Now: Epley formula. It gets less accurate above about 10 reps (endurance is 15–20). *Keep Epley, or blend formulas, or only estimate from sets of 12 or fewer?*
+- [ ] **14. Estimated one-rep max.** Now: Epley formula. It gets less accurate above about 10 reps (endurance is 12–20). *Keep Epley, or blend formulas, or only estimate from sets of 12 or fewer?*
 - [ ] **15. Changing phase.** Now: targets convert using estimated max (4 × 11 @ 145 lb becomes 4 × 5 @ 165 lb in strength). *Sensible, or start a little lighter after a phase change?*
 
 ## Exercises and plans
