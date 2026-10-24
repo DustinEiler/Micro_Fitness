@@ -13,6 +13,7 @@ import { toDisp, fromDisp } from '../js/format.js';
 import { newItem, suggest, applyResult } from '../js/progression.js';
 import { PHASES, ensureFitted, fitItem, restRange, PHASE_WEEKS } from '../js/phases.js';
 import { itemsForToday } from '../js/rotation.js';
+import { DEFAULT_EXERCISES, DEFAULT_ROUTINES, EQUIPMENT, GROUPS } from '../js/data.js';
 
 const $ = (sel) => document.querySelector(sel);
 const DAY = 864e5;
@@ -370,6 +371,35 @@ const CHECKS = [
     const s = parseBackup(JSON.stringify(v1));
     const r = s.routines[0];
     return (s.workouts.length === 1 && r.groups?.length === 2 && r.items.length === 2) || 'upgrade lost something';
+  }],
+  ['The exercise library has no duplicates', () => {
+    const ids = new Set(), names = new Set(), dups = [];
+    for (const e of DEFAULT_EXERCISES) {
+      const n = e.name.toLowerCase();
+      if (ids.has(e.id) || names.has(n)) dups.push(e.name);
+      ids.add(e.id);
+      names.add(n);
+    }
+    return !dups.length || `duplicates: ${dups.join(', ')}`;
+  }],
+  ['Every exercise has a valid group and equipment', () => {
+    const bad = DEFAULT_EXERCISES.filter((e) => !GROUPS[e.group] || e.equip.some((q) => !EQUIPMENT[q]));
+    return !bad.length || `check: ${bad.map((e) => e.id).join(', ')}`;
+  }],
+  ['Exercises you may have logged keep their IDs', () => {
+    const ids = new Set(DEFAULT_EXERCISES.map((e) => e.id));
+    const original = 'bench incline-bench incline-db db-bench machine-press cable-fly pec-deck dips push-up deadlift row tbar-row db-row pull-up chin-up lat-pulldown cable-row straight-arm ohp db-shoulder arnold lateral-raise cable-lateral face-pull rear-delt curl db-curl hammer-curl preacher cable-curl pushdown skull oh-ext cg-bench kickback squat front-squat goblet-squat rdl leg-press lunge split-squat hip-thrust leg-curl leg-ext calf-raise seated-calf leg-raise cable-crunch ab-wheel'.split(' ');
+    const routineIds = DEFAULT_ROUTINES.flatMap((r) => r.items.map((i) => i.exerciseId));
+    const missing = [...original, ...routineIds].filter((id) => !ids.has(id));
+    return !missing.length || `missing: ${missing.join(', ')}`;
+  }],
+  ['Upgrading moves hip thrust to glutes and keeps it in your routine', () => {
+    const v5 = { version: 5, units: 'kg', exercises: [{ id: 'hip-thrust', name: 'Hip thrust', group: 'legs', off: true }, { id: 'squat', name: 'Back squat', group: 'legs' }],
+      routines: [{ id: 'l', name: 'Legs', groups: [{ group: 'legs', count: 2 }], items: [{ exerciseId: 'squat', picked: true }, { exerciseId: 'hip-thrust', picked: true }] }], workouts: [] };
+    const s = parseBackup(JSON.stringify(v5));
+    const ht = s.exercises.find((e) => e.id === 'hip-thrust');
+    const groups = s.routines[0].groups.map((g) => `${g.group}:${g.count}`).join(' ');
+    return (ht.group === 'glutes' && ht.off === true && ht.equip.includes('barbell') && groups === 'legs:1 glutes:1' && s.exercises.length === DEFAULT_EXERCISES.length) || `hip thrust ${ht.group}, groups ${groups}, ${s.exercises.length} exercises`;
   }],
   ['Pounds convert without rounding errors', () => {
     fresh('lb');

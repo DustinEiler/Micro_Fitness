@@ -9,7 +9,7 @@ import { $, esc, ICON } from './dom.js';
 import { unit, toDisp, fromDisp } from './format.js';
 import { newItem, describe } from './progression.js';
 import { currentPhase, rangeText, stepFor, clamp, restRange, restRangeText, fitAllRest, fmtRest } from './phases.js';
-import { exKind, GROUPS } from './data.js';
+import { exKind, GROUPS, equipText } from './data.js';
 import { exById } from './queries.js';
 import { isOff } from './rotation.js';
 import { openSheet, closeSheet, confirmSheet, sheetState, toast } from './ui.js';
@@ -74,20 +74,30 @@ function groupBlock({ group, count }, gi, total) {
   const off = all.filter((e) => e.off);
   const ticked = pickedCount(group);
 
-  const rows = on
+  // Ticked and common exercises first; the rest behind "Show all".
+  const isPicked = (e) => {
+    const it = d.items[itemIndex(e.id)];
+    return !!it && it.picked !== false;
+  };
+  const expanded = d.showAll?.has(group);
+  const shown = on.filter((e) => expanded || isPicked(e) || e.common || e.custom || !e.equip);
+  const hidden = on.length - shown.length;
+
+  const rows = shown
     .map((e) => {
       const k = itemIndex(e.id);
       const it = d.items[k];
-      const picked = !!it && it.picked !== false;
+      const picked = isPicked(e);
       const open = picked && d.open === e.id;
       const name = esc(e.name);
+      const gear = equipText(e);
       return `<li class="dg-item${picked ? ' is-picked' : ''}${open ? ' is-open' : ''}">
         <div class="dg-row">
           <label class="tick"><input type="checkbox" data-pick="${e.id}"${picked ? ' checked' : ''} aria-label="Include ${name} in the rotation"><span class="tick-box" aria-hidden="true">${ICON.check}</span></label>
           ${
             picked
               ? `<button class="dl-name" data-action="draft-toggle" data-id="${e.id}" aria-expanded="${open}"><span>${name}</span><span class="dl-sum" id="dl-sum-${k}">${itemSummary(it)}</span></button>`
-              : `<span class="dl-name dl-off">${name}</span>`
+              : `<span class="dl-name dl-off"><span>${name}</span>${gear ? `<span class="dl-gear">${esc(gear)}</span>` : ''}</span>`
           }
         </div>
         ${open ? itemFields(it, k) : ''}
@@ -108,8 +118,11 @@ function groupBlock({ group, count }, gi, total) {
       <button class="icon-btn" data-action="group-remove" data-id="${group}" aria-label="Remove ${label}">${ICON.x}</button>
     </header>
     <p class="fine dg-note">${count} per workout, rotating through ${ticked} ticked.${ticked < count ? ` <strong>Tick at least ${count} to fill every workout.</strong>` : ''}</p>
-    <ul class="dg-list">${rows}${off.map((e) => `<li class="dg-item is-off"><span class="dl-name dl-off">${esc(e.name)}</span><span class="fine">Switched off</span></li>`).join('')}</ul>
-    <button class="btn-text" data-action="new-ex" data-id="${group}">New ${label.toLowerCase()} exercise</button>
+    <ul class="dg-list">${rows}${expanded ? off.map((e) => `<li class="dg-item is-off"><span class="dl-name dl-off">${esc(e.name)}</span><span class="fine">Switched off</span></li>`).join('') : ''}</ul>
+    <div class="dg-actions">
+      ${hidden || expanded ? `<button class="btn-text" data-action="group-show-all" data-id="${group}" aria-expanded="${!!expanded}">${expanded ? 'Show fewer' : `Show all ${on.length} ${label.toLowerCase()} exercises`}</button>` : ''}
+      <button class="btn-text" data-action="new-ex" data-id="${group}">New exercise</button>
+    </div>
   </section>`;
 }
 
@@ -146,6 +159,14 @@ export function togglePick(exerciseId, on) {
     if (on) d.items.push({ ...newItem(exerciseId), picked: true });
   } else d.items[k].picked = on;
   d.open = on ? exerciseId : d.open === exerciseId ? null : d.open;
+  openEditor();
+}
+
+export function toggleShowAll(group) {
+  const d = editor.draft;
+  d.showAll = d.showAll || new Set();
+  if (d.showAll.has(group)) d.showAll.delete(group);
+  else d.showAll.add(group);
   openEditor();
 }
 
@@ -228,7 +249,7 @@ export function saveNewExercise(group) {
     toast(`${existing.name} is already in your list under ${GROUPS[existing.group] || 'Other'}.`);
     return;
   }
-  const ex = { id: uid(), name, group, kind: $('#new-ex-kind').value };
+  const ex = { id: uid(), name, group, kind: $('#new-ex-kind').value, equip: [], custom: true };
   S.exercises.push(ex);
   persist();
   sheetState.onCancel = null;
@@ -254,7 +275,7 @@ export function saveRoutine() {
     toast(`Tick at least one ${(GROUPS[empty.group] || 'other').toLowerCase()} exercise.`);
     return;
   }
-  const { isNew, open, ...r } = d;
+  const { isNew, open, showAll, ...r } = d;
   r.name = r.name.trim();
   // Keep targets inside the current phase's ranges.
   const p = currentPhase();
@@ -299,27 +320,52 @@ export function deleteRoutine() {
 
 /* ---------- Exercise list: switch exercises on or off everywhere ---------- */
 
+let exListQuery = '';
+
 export function openExerciseList() {
   const offCount = S.exercises.filter((e) => e.off).length;
   openSheet(`<h2 class="sheet-h">Exercise list</h2>
     <p class="fine">Switch off anything you can’t do right now, like an injury or equipment your gym doesn’t have. It’s skipped in every routine until you switch it back on, and your progress on it is kept.</p>
-    ${offCount ? `<p class="phase-hint">${offCount} switched off.</p>` : ''}
-    ${Object.entries(GROUPS)
+    <p class="phase-hint">${S.exercises.length} exercises${offCount ? `, ${offCount} switched off` : ''}.</p>
+    <input type="search" id="exlist-q" class="search" placeholder="Search exercises or equipment" aria-label="Search exercises" autocomplete="off" value="${esc(exListQuery)}">
+    <div id="exlist">${Object.entries(GROUPS)
       .map(([g, label]) => {
         const list = S.exercises.filter((e) => (e.group || 'other') === g);
         if (!list.length) return '';
-        return `<h3 class="pick-group"><span class="dot" data-g="${g}"></span>${label}</h3>
+        return `<section class="exlist-group" data-group="${g}"><h3 class="pick-group"><span class="dot" data-g="${g}"></span>${label}</h3>
           <ul class="ex-list">${list
-            .map(
-              (e) => `<li class="${e.off ? 'is-off' : ''}"><label class="switch-row">
-                <span>${esc(e.name)}</span>
+            .map((e) => {
+              const gear = equipText(e);
+              return `<li class="${e.off ? 'is-off' : ''}" data-search="${esc(`${e.name} ${gear} ${label}`.toLowerCase())}"><label class="switch-row">
+                <span class="sw-text"><span class="sw-name">${esc(e.name)}</span>${gear ? `<span class="dl-gear">${esc(gear)}</span>` : ''}</span>
                 <input type="checkbox" role="switch" data-ex-on="${e.id}"${e.off ? '' : ' checked'} aria-label="${esc(e.name)} ${e.off ? 'off' : 'on'}">
                 <span class="switch" aria-hidden="true"></span>
-              </label></li>`
-            )
-            .join('')}</ul>`;
+              </label></li>`;
+            })
+            .join('')}</ul></section>`;
       })
-      .join('')}`, { tall: true });
+      .join('')}</div>
+    <p class="empty" id="exlist-empty" hidden>No exercises match.</p>`, { tall: true });
+  filterExerciseList(exListQuery);
+}
+
+// Filters the list in place, so the keyboard stays open while typing.
+export function filterExerciseList(q) {
+  exListQuery = q;
+  const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  let any = false;
+  document.querySelectorAll('#exlist .exlist-group').forEach((sec) => {
+    let n = 0;
+    sec.querySelectorAll('li[data-search]').forEach((li) => {
+      const show = words.every((w) => li.dataset.search.includes(w));
+      li.hidden = !show;
+      if (show) n++;
+    });
+    sec.hidden = !n;
+    if (n) any = true;
+  });
+  const empty = $('#exlist-empty');
+  if (empty) empty.hidden = any;
 }
 
 export function setExerciseOn(id, on) {

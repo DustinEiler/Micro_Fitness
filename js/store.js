@@ -4,7 +4,7 @@
 import { DEFAULT_EXERCISES, DEFAULT_ROUTINES, GROUP_FIXES } from './data.js';
 
 export const STORAGE_KEY = 'micro-fitness.v1';
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export const uid = () =>
   Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-5);
@@ -16,7 +16,7 @@ export function freshState() {
     weeklyGoal: 3,
     rest: 90,
     experience: 'experienced',
-    exercises: DEFAULT_EXERCISES.map((e) => ({ ...e })),
+    exercises: DEFAULT_EXERCISES.map((e) => ({ ...e, equip: [...e.equip] })),
     routines: DEFAULT_ROUTINES.map((r) => ({
       ...r,
       groups: r.groups.map((g) => ({ ...g })),
@@ -74,6 +74,39 @@ function migrate(data) {
       return { ...r, groups, items: (r.items || []).map((it) => ({ ...it, picked: true })) };
     });
     data.version = 5;
+  }
+  if (data.version < 6) {
+    // v6: the full exercise library (js/library.js). Built-in exercises get
+    // equipment tags and may move group (hip thrust moves to glutes); your own
+    // names, kinds and on/off switches are kept. Routines that used a moved
+    // exercise get its new group added so it keeps coming up.
+    const before = new Map((data.exercises || []).map((e) => [e.id, e.group]));
+    const defs = new Map(DEFAULT_EXERCISES.map((d) => [d.id, d]));
+    data.exercises = (data.exercises || []).map((e) => {
+      const d = defs.get(e.id);
+      if (!d) return e;
+      const { equip, common, explosive, advanced, group } = d;
+      const merged = { ...e, group, equip };
+      for (const [k, v] of Object.entries({ common, explosive, advanced })) if (v) merged[k] = v;
+      if (!merged.kind) merged.kind = d.kind;
+      return merged;
+    });
+    for (const d of DEFAULT_EXERCISES) if (!data.exercises.some((e) => e.id === d.id)) data.exercises.push({ ...d, equip: [...d.equip] });
+    const groupOf = (id) => data.exercises.find((e) => e.id === id)?.group || 'other';
+    for (const r of data.routines || []) {
+      if (!r.groups) continue;
+      for (const it of r.items || []) {
+        const was = before.get(it.exerciseId);
+        const now = groupOf(it.exerciseId);
+        if (!was || was === now || it.picked === false) continue;
+        const g = r.groups.find((x) => x.group === now);
+        if (g) g.count = Math.max(g.count, 1);
+        else r.groups.splice(r.groups.findIndex((x) => x.group === was) + 1, 0, { group: now, count: 1 });
+        const old = r.groups.find((x) => x.group === was);
+        if (old && old.count > 1) old.count--;
+      }
+    }
+    data.version = 6;
   }
   return data;
 }

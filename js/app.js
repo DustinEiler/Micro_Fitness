@@ -14,8 +14,8 @@ import { newEntry, startWorkout, finishWorkout, discardWorkout, chooseStep, rest
 import { openPicker, renderPickList, pick, createAndPick, exMenu, openSettings, exportBackup, importBackup, openPhases } from './sheets.js';
 import {
   editor, newRoutine, editRoutine, openEditor, saveRoutine, deleteRoutine, updateDraftItem,
-  togglePick, toggleOpen, changeCount, addGroup, moveGroup, removeGroup,
-  openNewExercise, saveNewExercise, openExerciseList, setExerciseOn,
+  togglePick, toggleOpen, toggleShowAll, changeCount, addGroup, moveGroup, removeGroup,
+  openNewExercise, saveNewExercise, openExerciseList, setExerciseOn, filterExerciseList,
 } from './editor.js';
 
 const actions = {
@@ -108,6 +108,7 @@ const actions = {
   'edit-routine': (b, { id }) => editRoutine(id),
   'draft-toggle': (b, { id }) => toggleOpen(id),
   'group-count': (b, { id, i }) => changeCount(id, i),
+  'group-show-all': (b, { id }) => toggleShowAll(id),
   'group-add': (b, { id }) => addGroup(id),
   'group-move': (b, { id, i }) => moveGroup(id, i),
   'group-remove': (b, { id }) => removeGroup(id),
@@ -174,6 +175,8 @@ document.addEventListener('input', (e) => {
     persistSoon();
   } else if (t.id === 'pick-q') {
     renderPickList(t.value);
+  } else if (t.id === 'exlist-q') {
+    filterExerciseList(t.value);
   } else if (t.id === 'draft-name' && editor.draft) {
     editor.draft.name = t.value;
   } else if (t.dataset.item) {

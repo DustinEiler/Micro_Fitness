@@ -8,7 +8,7 @@ import { $, esc, ICON } from './dom.js';
 import { fmtClock } from './format.js';
 import { PHASES, PHASE_ORDER, PHASE_WEEKS, phaseId, phaseWeek, phaseComplete, nextPhaseId, rangeText, ensureFitted } from './phases.js';
 import { exById } from './queries.js';
-import { GROUPS } from './data.js';
+import { GROUPS, equipText } from './data.js';
 import { openSheet, closeSheet, confirmSheet, sheetState, toast } from './ui.js';
 import { render } from './router.js';
 
@@ -35,7 +35,7 @@ export function renderPickList(q) {
     const items = list.filter((e) => (e.group || 'other') === g);
     if (!items.length) continue;
     html += `<h3 class="pick-group"><span class="dot" data-g="${g}"></span>${label}</h3><ul>${items
-      .map((e) => `<li><button class="pick-item" data-action="pick" data-id="${e.id}">${esc(e.name)}</button></li>`)
+      .map((e) => `<li><button class="pick-item" data-action="pick" data-id="${e.id}"><span>${esc(e.name)}</span>${equipText(e) ? `<span class="dl-gear">${esc(equipText(e))}</span>` : ''}</button></li>`)
       .join('')}</ul>`;
   }
   if (!html) html = `<p class="empty">No exercises match.</p>`;
@@ -53,7 +53,7 @@ export function pick(id) {
 export function createAndPick() {
   const name = $('#pick-q').value.trim();
   if (!name) return;
-  const ex = { id: uid(), name, group: 'other' };
+  const ex = { id: uid(), name, group: 'other', equip: [], custom: true };
   S.exercises.push(ex);
   persist();
   pick(ex.id);

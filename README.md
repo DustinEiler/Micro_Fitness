@@ -15,6 +15,7 @@ It's a progressive web app (PWA): it runs in the browser, installs to your home 
 - **History:** every finished workout, grouped by month.
 - **Progress:** a 12-week consistency view, weekly-goal streak, and a chart per exercise (estimated one-rep max, or max reps for bodyweight moves).
 - **Routines built from muscle groups:** a day like Chest × 2, Triceps × 1, Shoulders × 1. Tick which exercises can come up for each group; every workout uses the ones you've done least recently, so you rotate through them. Pin an exercise to keep it in every workout. Each exercise keeps its own target and tiny-step progress. Push, Pull and Legs are included to start.
+- **Exercise library:** 406 exercises across 12 muscle groups (including glutes, forearms and power/Olympic lifts), compiled from the StrengthLog and ACE Fitness directories with duplicates removed. Each is tagged with the equipment it needs. Stretches, timed holds and cardio machines are left out because the app logs sets × reps × weight.
 - **Exercise list:** switch off anything you can't do right now (an injury, missing equipment). It's skipped in every routine until you switch it back on, and its progress is kept. Add your own exercises from the routine editor.
 - **Settings:** kg or lb, beginner or experienced, weekly goal, default rest time, and backup export/import.
 
@@ -71,7 +72,8 @@ js/format.js          Units (kg/lb), dates, number formatting
 js/queries.js         Lookups over workout history (last sets, bests, streaks)
 js/ui.js              Toasts and the sheet system
 js/dom.js             DOM helpers and icons
-js/data.js            Built-in exercise library and starter routines
+js/library.js         The exercise library (names, equipment, flags)
+js/data.js            Muscle groups and starter routines
 sw.js                 Offline caching (service worker)
 Start Micro Fitness.command  Double-click on a Mac to open the test lab
 test/                 Test lab: phone preview, test data, phase clock, checks

@@ -8,7 +8,7 @@ Workout app built on Atomic Habits: every routine exercise has a target (sets ×
 - All paths relative (the site is served from `/Micro_Fitness/`, not `/`).
 - **When adding, renaming or deleting any file the app loads, update `SHELL` in `sw.js` and bump `CACHE`.** Otherwise the installed app breaks offline.
 - Weights are stored in **kg** always. Convert only for display, via `toDisp`/`fromDisp` in `js/format.js`.
-- Exercise IDs in `js/data.js` are permanent (history references them). Add new ones; never rename.
+- Exercise IDs in `js/library.js` are permanent (history references them). Add new ones; never rename.
 - Changing the saved data shape: keep old data loading (`load()` in `js/store.js` merges over `freshState()`); bump `SCHEMA_VERSION` and migrate if a field changes meaning.
 - Escape user text with `esc()` before putting it in HTML.
 
@@ -29,7 +29,8 @@ Read only the files a task needs.
 | Rest timer | `js/timer.js` |
 | History lookups (last sets, bests, streak) | `js/queries.js` |
 | Units, dates, number formats | `js/format.js` |
-| Default exercises/routines, compound vs isolation | `js/data.js` |
+| Exercise library: 406 exercises, equipment, flags | `js/library.js` |
+| Muscle groups, starter routines, compound vs isolation | `js/data.js` |
 | Styles, colours, dark mode | `css/app.css` (tokens at top of file) |
 
 ## Routines and rotation (js/rotation.js)
