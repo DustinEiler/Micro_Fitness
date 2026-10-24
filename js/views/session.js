@@ -54,7 +54,7 @@ export function viewSession() {
         </header>
         ${e.plan ? planBlock(e, i, ex.name) : last ? `<p class="ex-last">Last time: ${last.map(setStr).join(', ')}</p>` : `<p class="ex-last">First time logging this one.</p>`}
         <div class="set-grid">
-          <div class="set-row set-head" aria-hidden="true"><span>Set</span><span>${unit()}</span><span>Reps</span><span>Done</span></div>
+          <div class="set-row set-head"><span aria-hidden="true">Set</span><span><button class="unit-btn" data-action="toggle-units" aria-label="Weights in ${unit() === 'kg' ? 'kilograms' : 'pounds'}. Switch to ${unit() === 'kg' ? 'pounds' : 'kilograms'}">${unit()}</button></span><span aria-hidden="true">Reps</span><span aria-hidden="true">Done</span></div>
           ${sets}
         </div>
         <div class="ex-actions">
